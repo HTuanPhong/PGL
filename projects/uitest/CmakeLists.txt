@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.26)
+set(TARGET_NAME uitest)
+project(${TARGET_NAME} LANGUAGES C)
+
+add_subdirectory(../../pgl ${CMAKE_BINARY_DIR}/pgl_build)
+
+file(GLOB_RECURSE SOURCES "source/*.c")
+
+add_executable(${TARGET_NAME} WIN32 ${SOURCES})
+
+target_link_libraries(${TARGET_NAME} PRIVATE PGL)
+
+set_property(TARGET ${TARGET_NAME} PROPERTY C_STANDARD 11)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# copy target
+add_custom_target(
+    "copy-${TARGET_NAME}"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:${TARGET_NAME}>/assets
+    COMMENT "Copying ${TARGET_NAME} assets after build"
+)
+add_dependencies(${TARGET_NAME} "copy-${TARGET_NAME}")
+
+# run target
+add_custom_target(
+    "run-${TARGET_NAME}"
+    COMMAND ${CMAKE_COMMAND} -E chdir $<TARGET_FILE_DIR:${TARGET_NAME}>
+            $<TARGET_FILE:${TARGET_NAME}>
+    DEPENDS ${TARGET_NAME}
+    COMMENT "Running ${TARGET_NAME} in $<TARGET_FILE_DIR:${TARGET_NAME}>"
+)
+

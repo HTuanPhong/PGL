@@ -1,0 +1,78 @@
+WINDOW
+LINUX
+MACOS
+WEB
+
+
+OPENGL
+OPENGLES
+
+SDL
+
+RAYLIB
+
+# commands
+
+git submodule add https://github.com/libsdl-org/SDL_image ./src/vendors/SDL_image
+
+git clone <your_project>
+cd <your_project>
+mkdir build
+cd build
+cmake ..
+cmake --build .
+
+cmake --build . --target arena_technique_app
+
+
+# Lessons:
+
+do not compare float to 0 please!!! floating error !! if num != 0 do this if num > 1e-10 or num < -1e^-10
+
+arena allocator for frame.
+
+the reason memory leak is because a programe have a long loop
+
+this arena can be pass through every functions called within a frame to carry error messages or datas.
+
+prefer passing value down the call instead of global because we have a clear scope.
+
+passing arena down the call chain by copy and by ptr is a cool way to have RAII (basically just not have to call free)
+
+try to have ZII (basically to avoid calling init)
+
+immediate mode is faster when we need to change the structure frequently like 3D world and game GUI.
+retained mode is faster when we dont change the structure frequently and instead change it in bulk
+like gpu pipeline, command buffer, os gui where we cant afford the cost to rebuild while for the above we have to rebuild anyway. 
+
+gui have little thing to draw so these shader branching and single draw call make sense 
+but for a 3d world with many object this will slow down and you should do thing seperately instead
+
+"If this code runs a different number of times between two frames, could it change the outcome of the game?"
+If the answer is Yes (e.g., applying velocity, checking for a hit), it must go in the Tick. because deterministic is important.
+If the answer is No (e.g., updating the position of a sliding menu), it should go in the Draw step. because it will be smoother.
+
+# TODO:
+
+- tweak
+- hashmap
+- DPI aware UI the ui size * dpiscale thats it.
+- string type 50%
+- math (column major?)
+- add abstraction over sdl platform defines in soft_defines
+- implement soft_app
+- implement soft_graphic
+- procedural mesh generation for mesh cutting
+- set keybind
+
+the ui structure state need to be able to save.
+the ui need to be able to undo. In a form of delta encoding.
+the ui need to be able to form tight(tiling) and loose windows.
+the ui need to have a command bar.
+the ui need to be run with gpu and maybe without.
+the ui must not have small unnoticeable buttons
+the ui must have some rounding bloom blur glow border.
+the ui can have a drag and drop from other windows or software.
+the ui can be customizeable.
+the ui shouldnt care for phone layout user decide.
+the ui must not change too much.
