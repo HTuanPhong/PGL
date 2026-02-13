@@ -1,15 +1,27 @@
-WINDOW
-LINUX
-MACOS
-WEB
+Platforms to support
+  [x] WINDOW
+  [x] LINUX
+  [ ] MACOS
+  [x] WEB
 
+Graphic drivers to support
+  [x] OPENGL
+  [x] OPENGLES
+  [ ] Vulkan,moltenvk
 
-OPENGL
-OPENGLES
+Dependency
+  - SDL
 
-SDL
+Ideas for PGL
+  - RAYLIB
+  - Raddebugger
 
-RAYLIB
+Tools
+  Debugger:         LLDB
+  GPU Instrument:   RenderDoc
+  CPU Instrument:   Tracy
+  Meta build:       Cmake
+  Language server:  Clangd
 
 # commands
 
@@ -17,13 +29,13 @@ git submodule add https://github.com/libsdl-org/SDL_image ./src/vendors/SDL_imag
 
 git clone <your_project>
 cd <your_project>
-mkdir build
-cd build
-cmake ..
-cmake --build .
+cmake -S . -B build
+cmake --build build
+cmake --build build --target run-uitest
 
-cmake --build . --target arena_technique_app
-
+C:\dev\emsdk\emsdk_env.bat
+emcmake cmake -S . -B build-web
+cmake --build build-web && emrun build-web/uitest.html
 
 # Lessons:
 
@@ -76,3 +88,10 @@ the ui can have a drag and drop from other windows or software.
 the ui can be customizeable.
 the ui shouldnt care for phone layout user decide.
 the ui must not change too much.
+
+
+https://lotusspring.substack.com/p/upgrade-your-timestep
+https://www.gafferongames.com/post/fix_your_timestep/
+https://learnopengl.com/
+https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator
+https://nullprogram.com/blog/2023/09/27/

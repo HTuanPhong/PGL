@@ -1,0 +1,44 @@
+set(TARGET_NAME uitest)
+project(${TARGET_NAME} C)
+
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "source/*.c")
+
+add_executable(${TARGET_NAME} WIN32 ${SOURCES})
+set_property(TARGET ${TARGET_NAME} PROPERTY C_STANDARD 11)
+
+target_link_libraries(${TARGET_NAME} PRIVATE PGL)
+
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        SUFFIX ".html"
+    )
+
+    target_link_options(${TARGET_NAME} PRIVATE
+        "--preload-file assets/"
+        "-O3"
+        #"-flto" #way too slow compile time 
+    )
+else()
+    # copy target
+    add_custom_target(
+        "copy-${TARGET_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/assets
+                $<TARGET_FILE_DIR:${TARGET_NAME}>/assets
+        COMMENT "Copying ${TARGET_NAME} assets after build"
+    )
+    add_dependencies(${TARGET_NAME} "copy-${TARGET_NAME}")
+
+    # run target
+    add_custom_target(
+        "run-${TARGET_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E chdir $<TARGET_FILE_DIR:${TARGET_NAME}>
+                $<TARGET_FILE:${TARGET_NAME}>
+        DEPENDS ${TARGET_NAME}
+        COMMENT "Running ${TARGET_NAME} in $<TARGET_FILE_DIR:${TARGET_NAME}>"
+        USES_TERMINAL
+        VERBATIM
+    )
+endif()
+

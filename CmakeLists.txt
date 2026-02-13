@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.30.0)
+project(workplace C)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_subdirectory(pgl)
+
+file(GLOB APP_DIRS apps/*)
+
+foreach(app ${APP_DIRS})
+    if(EXISTS "${app}/CMakeLists.txt")
+        add_subdirectory(${app})
+    endif()
+endforeach()

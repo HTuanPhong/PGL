@@ -1,25 +1,36 @@
-set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library" FORCE)
-set(SDL_SHARED OFF CACHE BOOL "Do not build SDL as a shared library" FORCE)
-set(SDL_TEST_LIBRARY OFF CACHE BOOL "Do not build SDL tests" FORCE)
-set(SDL_EXAMPLES OFF CACHE BOOL "Do not build SDL examples" FORCE)
-set(SDL_INSTALL OFF CACHE BOOL "Disable SDL install step" FORCE)
-add_subdirectory(external/SDL)
-
-set(GLAD_DIR external/GLAD)
-set(GLAD_SOURCES ${GLAD_DIR}/src/glad.c)
-
-file(GLOB_RECURSE PGL_SOURCES 
+file(GLOB_RECURSE PGL_SOURCES CONFIGURE_DEPENDS 
     "${CMAKE_CURRENT_SOURCE_DIR}/source/*.c"
 )
 
-add_library(PGL STATIC ${PGL_SOURCES} ${GLAD_SOURCES})
+add_library(PGL STATIC ${PGL_SOURCES})
 
 target_include_directories(PGL 
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${GLAD_DIR}/include"
 )
 
-target_link_libraries(PGL PUBLIC 
-  SDL3::SDL3-static
-)
+target_compile_features(PGL PUBLIC c_std_11)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  target_compile_options(PGL PUBLIC "-sUSE_SDL=3")
+  target_link_options(PGL PUBLIC
+    "-sUSE_SDL=3"
+    "-sFULL_ES3=1"
+    "-sMIN_WEBGL_VERSION=2"
+    "-sMAX_WEBGL_VERSION=2"
+    "-sALLOW_MEMORY_GROWTH=1"
+  )
+else()
+  set(SDL_STATIC ON CACHE BOOL "Build SDL as a static library" FORCE)
+  set(SDL_SHARED OFF CACHE BOOL "Do not build SDL as a shared library" FORCE)
+  set(SDL_TEST_LIBRARY OFF CACHE BOOL "Do not build SDL tests" FORCE)
+  set(SDL_EXAMPLES OFF CACHE BOOL "Do not build SDL examples" FORCE)
+  set(SDL_INSTALL OFF CACHE BOOL "Disable SDL install step" FORCE)
+  add_subdirectory(external/SDL)
+  set(GLAD_DIR external/GLAD)
+  target_sources(PGL PRIVATE ${GLAD_DIR}/src/glad.c)
+  target_include_directories(PGL PUBLIC "${GLAD_DIR}/include")
+  target_link_libraries(PGL PUBLIC 
+    SDL3::SDL3-static
+  )
+endif()
