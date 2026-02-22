@@ -1,0 +1,112 @@
+That video is widely considered the **"Holy Grail"** of modern game engine architecture. It is the primary reference for the "Naughty Dog architecture" that the "Multi-Core by Default" blog post was advocating.
+
+However, does it tell you **everything**?
+**No.** It tells you the **Architecture**, but it leaves out the **Implementation details** (the hard, low-level code).
+
+Here is the breakdown of what the video gives you vs. what you still need to figure out to build the engine.
+
+### What the video gives you (The Blueprint)
+1.  **The "Fiber" Concept:** It explains *why* you need fibers (user-mode threads) instead of OS threads. Threads are too heavy; fibers let you pause a job mid-execution without stopping the CPU core.
+2.  **The "Counter" Synchronization:** It establishes that you should never use `std::mutex` or locks. You should only use **Atomic Counters**.
+    *   *Pattern:* "Kick 10 jobs, increment counter by 10. Wait until counter == 0."
+3.  **The Memory Model:** It explains **Linear Allocators** (Tagged Heap).
+    *   Instead of `new` and `delete` (which are slow), you allocate 2MB chunks and just move a pointer forward. At the end of the frame, you reset the pointer to 0. This is blindingly fast.
+4.  **The Frame Pipeline:** It shows how to run Game Logic for Frame 2 at the same time the GPU is rendering Frame 1.
+
+---
+
+### What is MISSING (The Hard Parts)
+The video is a high-level talk. To actually write the code, you have to solve three specific problems that Christian Gyrling glosses over:
+
+#### 1. The Context Switch (The Assembly Code)
+The video says "Switch Fiber." It does not show you the code to do this. Standard C++ **cannot** do this.
+*   **The Problem:** You need to save the CPU registers (`rsp`, `rbp`, `rip`, etc.) and jump to a new stack.
+*   **The Solution:** You have two options:
+    *   **Hard Mode:** Write your own Assembly (`.asm` files) to swap registers.
+    *   **Easy Mode:** Use **Windows Fibers API** (`ConvertThreadToFiber`, `SwitchToFiber`) or a library like **Boost.Context** or **Taskflow**.
+
+#### 2. The Scheduler Implementation
+The video shows pretty diagrams of queues. Writing a lock-free work-stealing queue that creates no contention across 6-16 cores is difficult.
+*   **The Missing Detail:** How do you handle "sleep"? If a fiber is waiting for a counter, you must remove it from the execution list and put it in a "Wait List." When the counter hits zero, you must move it back to the "Ready List." This logic is tricky to get right without bugs.
+
+#### 3. Data Layout (ECS)
+The video assumes you already know how to lay out your data. It focuses on *execution*, not *data*.
+*   If you implement this fiber system but still store your game objects as `class Player`, your engine will still be slow because of cache misses. You must combine this video's advice with **Data-Oriented Design** (Structure of Arrays).
+
+---
+
+### How to use this video to build your engine (Step-by-Step)
+
+If you want to follow this path, here is your roadmap:
+
+#### Step 1: Implement "The Switch"
+Before writing a job system, write a simple program that creates two "contexts" and swaps between them manually.
+*   *If on Windows:* Look up `CreateFiber` and `SwitchToFiber` on MSDN.
+*   *If Cross-Platform:* Look at the source code of **Christian Gyrling's own reference implementation** (others have recreated it, look for "Naughty Dog Job System C++" on GitHub) or use `boost::context`.
+
+#### Step 2: Implement the "Counter"
+Write a class that wraps an `std::atomic<int>`.
+```cpp
+struct Counter {
+    std::atomic<int> value;
+    std::string name; // For debugging, as Christian suggests
+};
+```
+
+#### Step 3: The Scheduler Loop
+Write the loop that runs on every thread. It should look like this (Pseudo-code based on the video):
+
+```cpp
+void WorkerThreadLoop() {
+    // 1. Convert this OS thread into a Fiber so it can yield
+    Fiber main_fiber = ConvertThreadToFiber(); 
+    
+    while (engine_running) {
+        // 2. Try to pop a job from the high/normal/low queues
+        Job* job = GetJobFromQueue();
+        
+        if (job) {
+            // 3. Switch execution to that job's function
+            // This is where the magic happens. The CPU jumps to the job.
+            SwitchToFiber(job->fiber); 
+            
+            // 4. When the job finishes (or yields), we return here.
+            FreeJob(job);
+        } else {
+            // No work? Yield to OS or steal work
+            YieldProcessor();
+        }
+    }
+}
+```
+
+#### Step 4: The "Wait" Function
+This is the most important function in the engine.
+
+```cpp
+void WaitForCounter(Counter* c, int target_value) {
+    if (c->value == target_value) return; // Done!
+    
+    // We are not done. We cannot block the OS thread.
+    // Instead, we put THIS fiber into a "Waiting List"
+    Fiber current_fiber = GetCurrentFiber();
+    AddFiberToWaitList(current_fiber, c);
+    
+    // Grab a NEW fiber from the pool (or a fresh job)
+    Fiber next_fiber = Scheduler::GetNextFiber();
+    
+    // Switch to the new fiber. 
+    // The current function 'WaitForCounter' actually PAUSES here.
+    // It will not run the next line of code until the counter is zero.
+    SwitchToFiber(next_fiber);
+    
+    // If we are here, it means the counter reached zero and the 
+    // scheduler switched back to us.
+}
+```
+
+### Summary
+The video is the **Architecture Guide**.
+You need to pair it with a **Memory Management** guide (Linear Allocators) and an **Assembly/OS** guide (Context Switching) to actually build it.
+
+If you are a beginner, I highly recommend looking at an existing open-source implementation of this architecture first, such as **Taskflow** or **enkiTS**, to understand how the low-level fiber switching is handled before trying to write your own.

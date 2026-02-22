@@ -1,4 +1,5 @@
 // windowing, timing, input
+#include "SDL3/SDL_video.h"
 #include "graphic.h"
 #include <SDL3/SDL.h>
 #include <pgl/app.h>
@@ -307,7 +308,15 @@ static void S_PollEvent() {
   memmove(app.input.keyboard.buttonsPrev,
           app.input.keyboard.buttons,
           sizeof(app.input.keyboard.buttons));
-  memmove(app.input.mouse.buttonsPrev, app.input.mouse.buttons, sizeof(app.input.mouse.buttons));
+  memmove(app.input.mouse.buttonsPrev,
+          app.input.mouse.buttons,
+          sizeof(app.input.mouse.buttons));
+  memset(app.input.keyboard.buttons, 0, sizeof(app.input.keyboard.buttons));
+  memset(app.input.mouse.buttons, 0, sizeof(app.input.mouse.buttons));
+  app.input.mouse.deltaPositionPixel.x = 0;
+  app.input.mouse.deltaPositionPixel.y = 0;
+  app.input.mouse.deltaScrollPixel.x = 0;
+  app.input.mouse.deltaScrollPixel.y = 0;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
@@ -326,7 +335,9 @@ static void S_PollEvent() {
       if (event.key.repeat) {
         continue;
       }
-      SDL_Keycode key = SDL_GetKeyFromScancode(event.key.scancode, event.key.mod, true);
+      SDL_Keycode key = SDL_GetKeyFromScancode(event.key.scancode,
+                                               event.key.mod,
+                                               true);
       key = S_MapKey(key);
       app.input.keyboard.buttons[key] = 1;
       app.input.anyButton = 1;
@@ -335,7 +346,9 @@ static void S_PollEvent() {
       if (event.key.repeat) {
         continue;
       }
-      SDL_Keycode key = SDL_GetKeyFromScancode(event.key.scancode, event.key.mod, true);
+      SDL_Keycode key = SDL_GetKeyFromScancode(event.key.scancode,
+                                               event.key.mod,
+                                               true);
       key = S_MapKey(key);
       app.input.keyboard.buttons[key] = 0;
     } break;
@@ -355,6 +368,11 @@ static void S_PollEvent() {
       app.input.mouse.buttons[btn] = 0;
     } break;
     case SDL_EVENT_MOUSE_WHEEL:
+      // future pinch zoom support maybe
+      // const bool *state = SDL_GetKeyboardState(NULL);
+      // if (state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL]) {
+      //     LogInfo("ZOOM?");
+      // }
       app.input.mouse.deltaScrollPixel.x = event.wheel.x * app.window.pixelDensity;
       app.input.mouse.deltaScrollPixel.y = event.wheel.y * app.window.pixelDensity;
       break;
@@ -368,7 +386,7 @@ static void S_MainLoop() {
   double newTime = GetTime();
   app.time.frameDeltaTime = newTime - app.time.previousFrameTime;
   // if we are under 4fps then slowdown update loop.
-  app.time.frameAccumulator += (app.time.frameDeltaTime > 0.25) ? 0.25 : app.time.frameAccumulator;
+  app.time.frameAccumulator += (app.time.frameDeltaTime > 0.25) ? 0.25 : app.time.frameDeltaTime;
   app.time.previousFrameTime = newTime;
   while (app.time.frameAccumulator >= app.time.physicsDeltaTime / app.time.physicsTimeScale) {
     app.callback.tick();
@@ -411,6 +429,9 @@ void LaunchApp(const char *windowTitle,
 #endif
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 8);
+  if (!SDL_GL_SetSwapInterval(-1)) { // try to adaptive vsync
+    SDL_GL_SetSwapInterval(1);
+  }
   SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE;
   sdl.window = SDL_CreateWindow(windowTitle, width, height, flags);
   SDL_CHECK(sdl.window);

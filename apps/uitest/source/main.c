@@ -1,3 +1,4 @@
+#include "pgl/log.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <pgl/pgl.h>
@@ -57,11 +58,11 @@ static void frame(void) {
   glUseProgram(program);
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, 3);
+  LogInfo("%d, %d \n", app.input.mouse.deltaScrollPixel.x, app.input.mouse.deltaScrollPixel.y);
+  SDL_Delay(1000);
 }
 
 static void tick() {
-  int i = 0;
-  i++;
 }
 
 /* ===================== MAIN ===================== */

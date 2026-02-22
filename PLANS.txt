@@ -9,6 +9,20 @@ Graphic drivers to support
   [x] OPENGLES
   [ ] Vulkan,moltenvk
 
+Threads
+  [ ] SDL thread for multi core by default MTCD
+
+Networking
+  [-] Enet ? (maybe copy the style ?)
+  [ ] WebRTC with EM_JS stuff ? (likely)
+  [ ] just rawdog socket and winsock ? (likely)
+
+UI
+  [ ] sdf rect
+  [ ] blur
+  [ ] windowing
+
+
 Dependency
   - SDL
 
@@ -22,6 +36,11 @@ Tools
   CPU Instrument:   Tracy
   Meta build:       Cmake
   Language server:  Clangd
+
+Projects
+  Topoloc (topology for C) basically it visualize the code base system, data structure, and
+  the interaction between them inorder to ensure memory safe and correct usage then in future maybe
+  reverse the order from topology to C to discover new data structure
 
 # commands
 
