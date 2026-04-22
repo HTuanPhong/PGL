@@ -1,0 +1,5 @@
+variable, function, macro function name : snake_case
+base type : lowercase
+struct, union : CamelCase
+macro, enum: SNAKE_CASE
+

@@ -6,54 +6,52 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#define GLSL(src) #src
-
-#if DESKTOP_GL
-const char *shaderVertexHeader = "#version 330 core\n";
-const char *shaderFragmentHeader = "#version 330 core\n";
+#if PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MACOS
+CStr shader_vertex_header = cstr_from_lit("#version 330 core\n");
+CStr shader_fragment_header = cstr_from_lit("#version 330 core\n");
 #else
-const char *shaderVertexHeader = "#version 300 es\n"
-                                 "precision highp float;\n";
-const char *shaderFragmentHeader = "#version 300 es\n"
-                                   "precision mediump float;\n";
+CStr shader_vertex_header = cstr_from_lit("#version 300 es\n"
+                                          "precision highp float;\n");
+CStr shader_fragment_header = cstr_from_lit("#version 300 es\n"
+                                            "precision mediump float;\n");
 #endif
 
-static UIGraphic uiGraphic = { 0 };
+static UIGraphic ui_graphic = { 0 };
 
 // 0 when failed
-GLuint CreateShaderProgram(Scratch *scratch, const char *vertSrc, const char *fragSrc, String *log_out) {
+GLuint shader_program_create(Scratch *scratch, CStr vert_src, CStr frag_src, StrBuf *log_out) {
   GLint success;
 
   // Vertex Shader
   GLuint        vertex = glCreateShader(GL_VERTEX_SHADER);
-  const GLchar *vShaderCode[2] = { shaderVertexHeader, vertSrc };
+  const GLchar *vShaderCode[2] = { shader_vertex_header.value, vert_src.value };
   glShaderSource(vertex, 2, vShaderCode, NULL);
   glCompileShader(vertex);
   glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
   if (!success) {
-    String typeStr = Str("Vertex Shader: ");
-    GLint  infoLength;
+    CStr  typeStr = cstr_from_lit("Vertex Shader: ");
+    GLint infoLength;
     glGetShaderiv(vertex, GL_INFO_LOG_LENGTH, &infoLength);
-    log_out->size = typeStr.size + infoLength;
-    log_out->value = ScratchPushArray(scratch, typeStr.size + infoLength + 1, char);
-    memmove(log_out->value, typeStr.value, typeStr.size);
-    glGetShaderInfoLog(vertex, infoLength, NULL, log_out->value + typeStr.size);
+    strbuf_reserve(scratch, log_out, infoLength + typeStr.size);
+    strbuf_append(scratch, log_out, strview_from_cstr(typeStr));
+    glGetShaderInfoLog(vertex, infoLength, NULL, log_out->value + log_out->size);
+    log_out->size += infoLength;
     return 0;
   }
   // Fragment Shader
   GLuint        fragment = glCreateShader(GL_FRAGMENT_SHADER);
-  const GLchar *fShaderCode[2] = { shaderFragmentHeader, fragSrc };
+  const GLchar *fShaderCode[2] = { shader_fragment_header.value, frag_src.value };
   glShaderSource(fragment, 2, fShaderCode, NULL);
   glCompileShader(fragment);
   glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
   if (!success) {
-    String typeStr = Str("Fragment Shader: ");
-    GLint  infoLength;
+    CStr  typeStr = cstr_from_lit("Fragment Shader: ");
+    GLint infoLength;
     glGetShaderiv(fragment, GL_INFO_LOG_LENGTH, &infoLength);
-    log_out->size = typeStr.size + infoLength;
-    log_out->value = ScratchPushArray(scratch, typeStr.size + infoLength + 1, char);
-    memmove(log_out->value, typeStr.value, typeStr.size);
-    glGetShaderInfoLog(fragment, infoLength, NULL, log_out->value + typeStr.size);
+    strbuf_reserve(scratch, log_out, infoLength + typeStr.size);
+    strbuf_append(scratch, log_out, strview_from_cstr(typeStr));
+    glGetShaderInfoLog(fragment, infoLength, NULL, log_out->value + log_out->size);
+    log_out->size += infoLength;
     return 0;
   }
   // Shader Program
@@ -63,13 +61,12 @@ GLuint CreateShaderProgram(Scratch *scratch, const char *vertSrc, const char *fr
   glLinkProgram(program);
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    String typeStr = Str("Shader Program: ");
-    GLint  infoLength;
+    CStr  typeStr = cstr_from_lit("Shader Program: ");
+    GLint infoLength;
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLength);
-    log_out->size = typeStr.size + infoLength;
-    log_out->value = ScratchPushArray(scratch, typeStr.size + infoLength + 1, char);
-    memmove(log_out->value, typeStr.value, typeStr.size);
-    glGetProgramInfoLog(program, infoLength, NULL, log_out->value + typeStr.size);
+    strbuf_reserve(scratch, log_out, infoLength + typeStr.size);
+    glGetProgramInfoLog(program, infoLength, NULL, log_out->value + log_out->size);
+    log_out->size += infoLength;
     return 0;
   }
   // Clean up
@@ -80,7 +77,7 @@ GLuint CreateShaderProgram(Scratch *scratch, const char *vertSrc, const char *fr
   return program;
 }
 
-static const char *vsRect = GLSL(
+static CStr vsRect = GLSL(
   layout(location = 0) in vec4 c2v_rect;
   layout(location = 1) in vec4 c2v_rectTexture;
   layout(location = 2) in vec4 c2v_color0;
@@ -150,7 +147,7 @@ static const char *vsRect = GLSL(
     v2p_omit_texture = c2v_style.z;
   });
 
-static const char *fsRect = GLSL(
+static CStr fsRect = GLSL(
   in vec2 v2p_sdf_sample_pos;
   // in vec2 v2p_texcoord_pct;
   in vec2  v2p_rect_half_size_px;
@@ -206,20 +203,20 @@ static const char *fsRect = GLSL(
     final_color.a *= border_sdf_t;
   });
 
-static void CreateRectGraphic() {
-  ScratchMarker m = ScratchBegin(0);
-  String        log = { 0 };
-  uiGraphic.rect.shaderProgram = CreateShaderProgram(m.scratch, vsRect, fsRect, &log);
-  if (!uiGraphic.rect.shaderProgram) {
-    LogErr("Rect graphic: %s", log.value);
+static void s_create_rect_graphic() {
+  ScratchMarker m = scratch_begin(0);
+  StrBuf        log = { 0 };
+  ui_graphic.rect.shader_program = shader_program_create(m.scratch, vsRect, fsRect, &log);
+  if (!ui_graphic.rect.shader_program) {
+    log_error("Rect graphic: %s", log.value);
     exit(1);
   }
 
-  glGenVertexArrays(1, &uiGraphic.rect.vao);
-  glBindVertexArray(uiGraphic.rect.vao);
+  glGenVertexArrays(1, &ui_graphic.rect.vao);
+  glBindVertexArray(ui_graphic.rect.vao);
 
-  glGenBuffers(1, &uiGraphic.rect.vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, uiGraphic.rect.vbo);
+  glGenBuffers(1, &ui_graphic.rect.vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, ui_graphic.rect.vbo);
 
   glVertexAttribDivisor(0, 1);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(RectInstance), (void *)offsetof(RectInstance, rect));
@@ -256,54 +253,77 @@ static void CreateRectGraphic() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-  ScratchEnd(m);
+  scratch_end(m);
 }
 
-static void DrawRectGraphic() {
+static void s_draw_rect_graphic() {
   RectInstance test = {
-    {            100,100,      300,300                                         },
-    {              0,   0,             0,    0 },
+    { 100, 100, 300, 300 },
+    { 0, 0, 0, 0 },
     { { 1, 0, 1, 1 },
-     { 1, 0, 0, 1 },
-     { 0, 1, 0, 1 },
-     { 0, 0, 1, 1 }                           },
-    {             50,  50,            50,    0 },
-    {             10, 1.0,             0, -200 }
+      { 1, 0, 0, 1 },
+      { 0, 1, 0, 1 },
+      { 0, 0, 1, 1 } },
+    { 50, 50, 50, 0 },
+    { 10, 1.0, 0, -200 }
   };
-  DynamicBlockPush(&uiGraphic.rect.buffer, &test, RectInstance);
+  dynamic_block_push(&ui_graphic.rect.buffer, &test, RectInstance);
 
-  glUseProgram(uiGraphic.rect.shaderProgram);
-  glBindVertexArray(uiGraphic.rect.vao);
-  glBindBuffer(GL_ARRAY_BUFFER, uiGraphic.rect.vbo);
+  glUseProgram(ui_graphic.rect.shader_program);
+  glBindVertexArray(ui_graphic.rect.vao);
+  glBindBuffer(GL_ARRAY_BUFFER, ui_graphic.rect.vbo);
 
-  glBufferData(GL_ARRAY_BUFFER, uiGraphic.rect.buffer.size, uiGraphic.rect.buffer.data, GL_STREAM_DRAW);
-  glUniform2f(glGetUniformLocation(uiGraphic.rect.shaderProgram, "u_viewportSizePixel"), app.window.sizePixel.x, app.window.sizePixel.y);
-  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, uiGraphic.rect.buffer.size / sizeof(RectInstance));
+  glBufferData(GL_ARRAY_BUFFER, ui_graphic.rect.buffer.size, ui_graphic.rect.buffer.data, GL_STREAM_DRAW);
+  Vec2I32 window_size = window_get_size();
+  glUniform2f(glGetUniformLocation(ui_graphic.rect.shader_program, "u_viewportSizePixel"), window_size.x, window_size.y);
+  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, ui_graphic.rect.buffer.size / sizeof(RectInstance));
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
   glUseProgram(0);
 
-  DynamicBlockTrimTo(&uiGraphic.rect.buffer, 0);
+  dynamic_block_trim_to(&ui_graphic.rect.buffer, 0);
 }
 
-static const char *vsDualKawase = GLSL(
+/*
+  Rect:
+        0--------------> x
+        |
+        |   xy----o
+        |   |     |
+        |   o----zw
+        V
+        Y
+  NDC:
+                  Y
+                  ^
+                  |
+               xy-|--o
+          -----|--0--|----->x
+               o--|-zw
+                  |
+*/
+
+static CStr vsDualKawase = GLSL(
   layout(location = 0) in vec4 c2v_rect;
 
   out vec2 v2p_texCoord;
 
   uniform vec2 u_viewportSizePixel;
-  uniform void main(void) {
+
+  void main(void) {
+    // construct our rect from 2 corner point
     vec2 vertices[] = vec2[](vec2(0, 0), vec2(0, 1), vec2(1, 0), vec2(1, 1));
     vec2 rect_size = c2v_rect.zw - c2v_rect.xy;
     vec2 vertex_pos_px = c2v_rect.xy + vertices[gl_VertexID] * rect_size;
+    // to NDC
     vec2 ndc_pos = (vertex_pos_px / u_viewportSizePixel) * 2.0 - 1.0;
     ndc_pos.y = -ndc_pos.y;
     gl_Position = vec4(ndc_pos, 0.0, 1.0);
     v2p_texCoord = vertex_pos_px / u_viewportSizePixel;
   });
 
-static const char *fsDualKawaseDownsample = GLSL(
+static CStr fsDualKawaseDownsample = GLSL(
   in vec2  v2p_texCoord;
   out vec4 fragColor;
 
@@ -326,7 +346,7 @@ static const char *fsDualKawaseDownsample = GLSL(
     fragColor = sum * 0.125;
   });
 
-static const char *fsDualKawaseUpsample = GLSL(
+static CStr fsDualKawaseUpsample = GLSL(
   in vec2  v2p_texCoord;
   out vec4 fragColor;
 
@@ -358,115 +378,139 @@ static const char *fsDualKawaseUpsample = GLSL(
     fragColor = sum / 12.0;
   });
 
-static void CreateBlurGraphic() {
-  ScratchMarker m = ScratchBegin(0);
-  String        log = { 0 };
-  uiGraphic.blur.DownsampleProgram = CreateShaderProgram(m.scratch, vsDualKawase, fsDualKawaseDownsample, &log);
-  if (!uiGraphic.blur.DownsampleProgram) {
-    LogErr("Blur graphic: %s", log.value);
+static void s_create_blur_graphic() {
+  ScratchMarker m = scratch_begin(0);
+  StrBuf        log = { 0 };
+  ui_graphic.blur.downsample_program = shader_program_create(m.scratch,
+                                                             vsDualKawase,
+                                                             fsDualKawaseDownsample,
+                                                             &log);
+  if (!ui_graphic.blur.downsample_program) {
+    log_error("Blur graphic: %s", log.value);
     exit(1);
   }
-  uiGraphic.blur.UpsampleProgram = CreateShaderProgram(m.scratch, vsDualKawase, fsDualKawaseUpsample, &log);
-  if (!uiGraphic.blur.UpsampleProgram) {
-    LogErr("Blur graphic: %s", log.value);
+  ui_graphic.blur.upsample_program = shader_program_create(m.scratch,
+                                                           vsDualKawase,
+                                                           fsDualKawaseUpsample,
+                                                           &log);
+  if (!ui_graphic.blur.upsample_program) {
+    log_error("Blur graphic: %s", log.value);
     exit(1);
   }
 
-  glGenVertexArrays(1, &uiGraphic.blur.vao);
-  glBindVertexArray(uiGraphic.blur.vao);
-  glGenBuffers(1, &uiGraphic.blur.vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, uiGraphic.blur.vbo);
+  glGenVertexArrays(1, &ui_graphic.blur.vao);
+  glBindVertexArray(ui_graphic.blur.vao);
+  glGenBuffers(1, &ui_graphic.blur.vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, ui_graphic.blur.vbo);
 
   glVertexAttribDivisor(0, 1);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(BlurInstance), (void *)offsetof(BlurInstance, rect));
+  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE,
+                        sizeof(BlurInstance),
+                        (void *)offsetof(BlurInstance, rect));
   glEnableVertexAttribArray(0);
 
   glVertexAttribDivisor(1, 1);
-  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(BlurInstance), (void *)offsetof(BlurInstance, radii));
+  glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE,
+                        sizeof(BlurInstance),
+                        (void *)offsetof(BlurInstance, radii));
   glEnableVertexAttribArray(1);
 
-  glGenFramebuffers(2, uiGraphic.blur.fbo);
-  glGenTextures(2, uiGraphic.blur.fboTex);
+  glGenFramebuffers(2, ui_graphic.blur.fbo);
+  glGenTextures(2, ui_graphic.blur.fbo_tex);
 
   for (int i = 0; i < 2; i++) {
-    glBindTexture(GL_TEXTURE_2D, uiGraphic.blur.fboTex[i]);
+    glBindTexture(GL_TEXTURE_2D, ui_graphic.blur.fbo_tex[i]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Linear is REQUIRED for the sampling trick
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindFramebuffer(GL_FRAMEBUFFER, uiGraphic.blur.fbo[i]);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, uiGraphic.blur.fboTex[i], 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, ui_graphic.blur.fbo[i]);
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+                           GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D,
+                           ui_graphic.blur.fbo_tex[i],
+                           0);
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-  ScratchEnd(m);
+  scratch_end(m);
 }
 
-static void DrawBlurGraphic() {
-  //  BlurInstance test = {
-  //    {100,100,300,300},
-  //    {10,10,10,10}
-  //  };
-  //  DynamicBlockPush(&uiGraphic.blur.buffer, &test, BlurInstance);
-  //
-  //  int count = uiGraphic.blur.buffer.size / sizeof(BlurInstance);
-  //  if (count == 0) return;
-  //
-  //  int w = (int)app.window.sizePixel.x;
-  //  int h = (int)app.window.sizePixel.y;
-  //  if (w == 0 || h == 0) return;
-  //
-  //  for(int i=0; i<2; ++i) {
-  //    glBindTexture(GL_TEXTURE_2D, uiGraphic.blur.fboTex[i]);
-  //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  //  }
-  //
-  //  // Copy Screen (Read: 0) -> Texture 0 (Draw: FBO 0)
-  //  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-  //  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, uiGraphic.blur.fbo[0]);
-  //  glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-  //
-  //  glUseProgram(uiGraphic.blur.shaderProgram);
-  //  glBindVertexArray(uiGraphic.blur.vao);
-  // glBindBuffer(GL_ARRAY_BUFFER, uiGraphic.blur.vbo);
-  // glBufferData(GL_ARRAY_BUFFER, uiGraphic.blur.buffer.size, uiGraphic.blur.buffer.data, GL_STREAM_DRAW);
-  //
-  //  GLint loc_viewport = glGetUniformLocation(uiGraphic.blur.shaderProgram, "u_viewportSizePixel");
-  //  GLint loc_dir      = glGetUniformLocation(uiGraphic.blur.shaderProgram, "u_direction");
-  //
-  //  glUniform2f(loc_viewport, app.window.sizePixel.x, app.window.sizePixel.y);
-  //
-  //  // horizontal pass
-  //  glBindFramebuffer(GL_FRAMEBUFFER, uiGraphic.blur.fbo[1]);
-  //  glActiveTexture(GL_TEXTURE0);
-  //  glBindTexture(GL_TEXTURE_2D, uiGraphic.blur.fboTex[0]);
-  //
-  //  glUniform2f(loc_dir, 1.f, 0.f); // Horizontal Direction
-  //  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-  //
-  //  // vertical pass
-  //  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  //  glBindTexture(GL_TEXTURE_2D, uiGraphic.blur.fboTex[1]);
-  //
-  //  glUniform2f(loc_dir, 0.f, 1.f); // Vertical Direction
-  //  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-  //
-  //  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  //  glBindVertexArray(0);
-  //  glUseProgram(0);
-  //
-  //  DynamicBlockTrimTo(&uiGraphic.blur.buffer, 0);
+static void draw_blur_graphic() {
+  BlurInstance test = {
+    { 100, 100, 300, 300 },
+    { 10, 10, 10, 10 }
+  };
+  dynamic_block_push(&ui_graphic.blur.buffer, &test, BlurInstance);
+
+  int count = ui_graphic.blur.buffer.size / sizeof(BlurInstance);
+  if (count == 0) {
+    return;
+  }
+  Vec2I32 window_size = window_get_size();
+  int     w = window_size.x;
+  int     h = window_size.y;
+  if (w == 0 || h == 0) {
+    return;
+  }
+
+  // set the size of the texture
+  for (int i = 0; i < 2; ++i) {
+    glBindTexture(GL_TEXTURE_2D, ui_graphic.blur.fbo_tex[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0,
+                 GL_RGBA,
+                 w, h, 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 NULL);
+  }
+
+  // Copy Screen (Read: 0) -> Texture 0 (Draw: FBO 0)
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ui_graphic.blur.fbo[0]);
+  glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+  glUseProgram(ui_graphic.blur.shader_program);
+  glBindVertexArray(ui_graphic.blur.vao);
+  glBindBuffer(GL_ARRAY_BUFFER, ui_graphic.blur.vbo);
+  glBufferData(GL_ARRAY_BUFFER, ui_graphic.blur.buffer.size, ui_graphic.blur.buffer.data, GL_STREAM_DRAW);
+
+  GLint loc_viewport = glGetUniformLocation(ui_graphic.blur.shader_program, "u_viewportSizePixel");
+  GLint loc_dir = glGetUniformLocation(ui_graphic.blur.shader_program, "u_direction");
+
+  glUniform2f(loc_viewport, app.window.sizePixel.x, app.window.sizePixel.y);
+
+  // horizontal pass
+  glBindFramebuffer(GL_FRAMEBUFFER, ui_graphic.blur.fbo[1]);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, ui_graphic.blur.fbo_tex[0]);
+
+  glUniform2f(loc_dir, 1.f, 0.f); // Horizontal Direction
+  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+
+  // vertical pass
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, ui_graphic.blur.fbo_tex[1]);
+
+  glUniform2f(loc_dir, 0.f, 1.f); // Vertical Direction
+  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+  glUseProgram(0);
+
+  dynamic_block_trim_to(&ui_graphic.blur.buffer, 0);
 }
 
-void CreateUIGraphic() {
-  CreateRectGraphic();
-  // CreateBlurGraphic();
+void create_ui_graphic() {
+  s_create_rect_graphic();
+  // s_create_blur_graphic();
 }
 
-void DrawUIGraphic() {
-  DrawRectGraphic();
-  // DrawBlurGraphic();
+void draw_ui_graphic() {
+  s_draw_rect_graphic();
+  // draw_blur_graphic();
 }

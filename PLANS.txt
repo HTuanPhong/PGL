@@ -10,12 +10,12 @@ Graphic drivers to support
   [ ] Vulkan,moltenvk
 
 Threads
-  [ ] SDL thread for multi core by default MTCD
+  [ ] SDL thread for multi core by default MTCD but tls is our own keyword
 
 Networking
   [-] Enet ? (maybe copy the style ?)
   [ ] WebRTC with EM_JS stuff ? (likely)
-  [ ] just rawdog socket and winsock ? (likely)
+  [ ] just socket and winsock ? (likely)
 
 UI
   [ ] sdf rect
@@ -25,6 +25,12 @@ UI
 
 Dependency
   - SDL
+    + For application entry point
+    + Display and Window Management
+    + Clipboard Handling
+    + Input keyboard, mouse, camera, gamepad, joystick, touch, pen, sensors
+    + time
+    + File Dialogs
 
 Ideas for PGL
   - RAYLIB
@@ -34,7 +40,7 @@ Tools
   Debugger:         LLDB
   GPU Instrument:   RenderDoc
   CPU Instrument:   Tracy
-  Meta build:       Cmake
+  Build:            Cmake + Ninja
   Language server:  Clangd
 
 Projects
@@ -48,7 +54,7 @@ git submodule add https://github.com/libsdl-org/SDL_image ./src/vendors/SDL_imag
 
 git clone <your_project>
 cd <your_project>
-cmake -S . -B build
+cmake -S . -B build -G "Ninja"
 cmake --build build
 cmake --build build --target run-uitest
 

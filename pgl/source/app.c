@@ -1,16 +1,16 @@
 // windowing, timing, input
-#include "SDL3/SDL_video.h"
 #include "graphic.h"
-#include <SDL3/SDL.h>
 #include <pgl/app.h>
+#include <pgl/defines.h>
 #include <pgl/graphic.h>
 #include <pgl/log.h>
 
-#ifdef __EMSCRIPTEN__
+//
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
+#if PLATFORM_EMSCRIPTEN
 #  include <emscripten.h>
 #endif
-#include <stdlib.h>
-#include <string.h> // memmove
 
 typedef struct SDLdata {
   SDL_Window   *window;
@@ -20,17 +20,17 @@ typedef struct SDLdata {
 
 static SDLdata sdl = { 0 };
 
-AppData app = { 0 };
+static AppData app = { 0 };
 
-#define SDL_CHECK(x)                     \
-  do {                                   \
-    if (!(x)) {                          \
-      LogErr("SDL: %s", SDL_GetError()); \
-      exit(1);                           \
-    }                                    \
+#define SDL_CHECK(x)                        \
+  do {                                      \
+    if (!(x)) {                             \
+      log_error("SDL: %s", SDL_GetError()); \
+      exit(1);                              \
+    }                                       \
   } while (0)
 
-static MouseButton S_MapMouseButton(int btn) {
+static MouseButton s_map_mouse_button(int btn) {
   switch (btn) {
   case SDL_BUTTON_LEFT:   return MOUSE_LEFT;
   case SDL_BUTTON_RIGHT:  return MOUSE_RIGHT;
@@ -41,7 +41,7 @@ static MouseButton S_MapMouseButton(int btn) {
   return 0;
 }
 
-static KeyboardButton S_MapKey(SDL_Keycode key) {
+static KeyboardButton s_map_key(SDL_Keycode key) {
   switch (key) {
   case SDLK_UNKNOWN:              return KEY_UNKNOWN;
   case SDLK_RETURN:               return KEY_RETURN;
@@ -303,33 +303,33 @@ static KeyboardButton S_MapKey(SDL_Keycode key) {
   return 0;
 }
 
-static void S_PollEvent() {
-  app.input.anyButton = 0;
-  memmove(app.input.keyboard.buttonsPrev,
-          app.input.keyboard.buttons,
-          sizeof(app.input.keyboard.buttons));
-  memmove(app.input.mouse.buttonsPrev,
-          app.input.mouse.buttons,
-          sizeof(app.input.mouse.buttons));
-  memset(app.input.keyboard.buttons, 0, sizeof(app.input.keyboard.buttons));
-  memset(app.input.mouse.buttons, 0, sizeof(app.input.mouse.buttons));
-  app.input.mouse.deltaPositionPixel.x = 0;
-  app.input.mouse.deltaPositionPixel.y = 0;
-  app.input.mouse.deltaScrollPixel.x = 0;
-  app.input.mouse.deltaScrollPixel.y = 0;
+static void s_poll_event() {
+  app.input.any_button = 0;
+  mem_move(app.input.keyboard.previous_buttons,
+           app.input.keyboard.buttons,
+           sizeof(app.input.keyboard.buttons));
+  mem_move(app.input.mouse.previous_buttons,
+           app.input.mouse.buttons,
+           sizeof(app.input.mouse.buttons));
+  mem_set(app.input.keyboard.buttons, 0, sizeof(app.input.keyboard.buttons));
+  mem_set(app.input.mouse.buttons, 0, sizeof(app.input.mouse.buttons));
+  app.input.mouse.delta_position.x = 0;
+  app.input.mouse.delta_position.y = 0;
+  app.input.mouse.delta_scroll.x = 0;
+  app.input.mouse.delta_scroll.y = 0;
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
-    case SDL_EVENT_QUIT: app.window.shouldClose = true; break;
+    case SDL_EVENT_QUIT: app.should_close = true; break;
     case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-      app.window.sizePixel.x = event.window.data1;
-      app.window.sizePixel.y = event.window.data2;
-      glViewport(0, 0, app.window.sizePixel.x, app.window.sizePixel.y);
-      app.window.pixelDensity = SDL_GetWindowPixelDensity(sdl.window);
+      app.window.size.x = event.window.data1;
+      app.window.size.y = event.window.data2;
+      glViewport(0, 0, app.window.size.x, app.window.size.y);
+      app.window.pixel_density = SDL_GetWindowPixelDensity(sdl.window);
       break;
     case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
-      app.window.displayScale = SDL_GetWindowDisplayScale(sdl.window);
-      app.window.pixelDensity = SDL_GetWindowPixelDensity(sdl.window);
+      app.window.display_scale = SDL_GetWindowDisplayScale(sdl.window);
+      app.window.pixel_density = SDL_GetWindowPixelDensity(sdl.window);
       break;
     case SDL_EVENT_KEY_DOWN: {
       if (event.key.repeat) {
@@ -338,9 +338,9 @@ static void S_PollEvent() {
       SDL_Keycode key = SDL_GetKeyFromScancode(event.key.scancode,
                                                event.key.mod,
                                                true);
-      key = S_MapKey(key);
+      key = s_map_key(key);
       app.input.keyboard.buttons[key] = 1;
-      app.input.anyButton = 1;
+      app.input.any_button = 1;
     } break;
     case SDL_EVENT_KEY_UP: {
       if (event.key.repeat) {
@@ -349,75 +349,70 @@ static void S_PollEvent() {
       SDL_Keycode key = SDL_GetKeyFromScancode(event.key.scancode,
                                                event.key.mod,
                                                true);
-      key = S_MapKey(key);
+      key = s_map_key(key);
       app.input.keyboard.buttons[key] = 0;
     } break;
     case SDL_EVENT_MOUSE_MOTION:
-      app.input.mouse.positionPixel.x = event.motion.x * app.window.pixelDensity;
-      app.input.mouse.positionPixel.y = event.motion.y * app.window.pixelDensity;
-      app.input.mouse.deltaPositionPixel.x = event.motion.xrel * app.window.pixelDensity;
-      app.input.mouse.deltaPositionPixel.y = event.motion.yrel * app.window.pixelDensity;
+      app.input.mouse.position.x = event.motion.x * app.window.pixel_density;
+      app.input.mouse.position.y = event.motion.y * app.window.pixel_density;
+      app.input.mouse.delta_position.x = event.motion.xrel * app.window.pixel_density;
+      app.input.mouse.delta_position.y = event.motion.yrel * app.window.pixel_density;
       break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-      int btn = S_MapMouseButton(event.button.button);
+      int btn = s_map_mouse_button(event.button.button);
       app.input.mouse.buttons[btn] = 1;
-      app.input.anyButton = 1;
+      app.input.any_button = 1;
     } break;
     case SDL_EVENT_MOUSE_BUTTON_UP: {
-      int btn = S_MapMouseButton(event.button.button);
+      int btn = s_map_mouse_button(event.button.button);
       app.input.mouse.buttons[btn] = 0;
     } break;
     case SDL_EVENT_MOUSE_WHEEL:
       // future pinch zoom support maybe
-      // const bool *state = SDL_GetKeyboardState(NULL);
+      // const b8 *state = SDL_GetKeyboardState(NULL);
       // if (state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL]) {
       //     LogInfo("ZOOM?");
       // }
-      app.input.mouse.deltaScrollPixel.x = event.wheel.x * app.window.pixelDensity;
-      app.input.mouse.deltaScrollPixel.y = event.wheel.y * app.window.pixelDensity;
+      app.input.mouse.delta_scroll.x = event.wheel.x * app.window.pixel_density;
+      app.input.mouse.delta_scroll.y = event.wheel.y * app.window.pixel_density;
       break;
     default: break;
     }
   }
 }
 
-static void S_MainLoop() {
-  S_PollEvent();
-  double newTime = GetTime();
-  app.time.frameDeltaTime = newTime - app.time.previousFrameTime;
+static void s_main_loop() {
+  s_poll_event();
+  f64 newTime = app_get_time();
+  app.frame.delta_time = newTime - app.frame.previous_time;
   // if we are under 4fps then slowdown update loop.
-  app.time.frameAccumulator += (app.time.frameDeltaTime > 0.25) ? 0.25 : app.time.frameDeltaTime;
-  app.time.previousFrameTime = newTime;
-  while (app.time.frameAccumulator >= app.time.physicsDeltaTime / app.time.physicsTimeScale) {
+  app.frame.accumulator += (app.frame.delta_time > 0.25) ? 0.25 : app.frame.delta_time;
+  app.frame.previous_time = newTime;
+  while (app.frame.accumulator >= app.tick.delta_time / app.tick.time_scale) {
     app.callback.tick();
-    app.time.physicsTime += app.time.physicsDeltaTime;
-    app.time.frameAccumulator -= app.time.physicsDeltaTime / app.time.physicsTimeScale;
+    app.tick.time += app.tick.delta_time;
+    app.frame.accumulator -= app.tick.delta_time / app.tick.time_scale;
   }
   app.callback.frame();
-  DrawUIGraphic();
+  draw_ui_graphic();
   SDL_GL_SwapWindow(sdl.window);
 }
 
-static bool S_EventFilter(void *userdata, SDL_Event *event) {
-  if (event->type
-      == SDL_EVENT_WINDOW_EXPOSED) // linux wayland might need && event->window.data1 == 1
+static b8 s_event_filter(void *userdata, SDL_Event *event) {
+  if (event->type == SDL_EVENT_WINDOW_EXPOSED) // linux wayland might need && event->window.data1 == 1
   {
-    S_MainLoop();
+    s_main_loop();
     return false;
   }
   return true;
 }
 
-double GetTime() {
-  return (SDL_GetTicksNS() * 1e-9);
-}
-
-void LaunchApp(const char *windowTitle,
-               int         width,
-               int         height,
-               void        (*init)(),
-               void        (*tick)(),
-               void        (*frame)()) {
+void app_launch(CStr window_title,
+                i32  width,
+                i32  height,
+                void (*init)(),
+                void (*tick)(),
+                void (*frame)()) {
   SDL_CHECK(SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_CAMERA));
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -433,13 +428,13 @@ void LaunchApp(const char *windowTitle,
     SDL_GL_SetSwapInterval(1);
   }
   SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE;
-  sdl.window = SDL_CreateWindow(windowTitle, width, height, flags);
+  sdl.window = SDL_CreateWindow(window_title.value, width, height, flags);
   SDL_CHECK(sdl.window);
   sdl.glContext = SDL_GL_CreateContext(sdl.window);
   SDL_CHECK(sdl.glContext);
   SDL_CHECK(SDL_GL_MakeCurrent(sdl.window, sdl.glContext));
 
-#if DESKTOP_GL
+#if PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MACOS
   if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
     SDL_Log("Failed to initialize GLAD\n");
     exit(1);
@@ -448,21 +443,113 @@ void LaunchApp(const char *windowTitle,
   app.callback.init = init;
   app.callback.tick = tick;
   app.callback.frame = frame;
-  app.time.physicsDeltaTime = 1.0 / 240.0;
-  app.time.physicsTimeScale = 1;
-  app.time.previousFrameTime = GetTime();
-  CreateUIGraphic();
+  app.tick.delta_time = 1.0 / 240.0;
+  app.tick.time_scale = 1;
+  app.frame.previous_time = app_get_time();
+  create_ui_graphic();
   init();
-  SDL_SetEventFilter(S_EventFilter, NULL);
+  SDL_SetEventFilter(s_event_filter, NULL);
 #ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop(S_MainLoop, 0, 1);
+  emscripten_set_main_loop(s_main_loop, 0, 1);
 #else
-  while (!app.window.shouldClose) {
-    S_MainLoop();
+  while (!app.should_close) {
+    s_main_loop();
   }
 #endif
   SDL_DestroyCursor(sdl.cursor);
   SDL_GL_DestroyContext(sdl.glContext);
   SDL_DestroyWindow(sdl.window);
   SDL_Quit();
+}
+
+f64 app_get_time() {
+  return (SDL_GetTicksNS() * 1e-9);
+}
+
+StrView app_get_base_path() {
+  return app.base_path;
+}
+
+StrView window_get_title() {
+  return app.window.title;
+}
+
+Vec2I32 window_get_size() {
+  return app.window.size;
+}
+
+f32 window_get_pixel_density() {
+  return app.window.pixel_density;
+}
+
+f32 window_get_display_scale() {
+  return app.window.display_scale;
+}
+
+b8 input_is_key_down(KeyboardButton btn) {
+  return app.input.keyboard.buttons[btn];
+}
+
+b8 input_is_key_up(KeyboardButton btn) {
+  return !app.input.keyboard.buttons[btn];
+}
+
+b8 input_is_key_pressed(KeyboardButton btn) {
+  return !app.input.keyboard.previous_buttons[btn] && app.input.keyboard.buttons[btn];
+}
+
+b8 input_is_key_released(KeyboardButton btn) {
+  return app.input.keyboard.previous_buttons[btn] && !app.input.keyboard.buttons[btn];
+}
+
+b8 input_is_mouse_down(MouseButton btn) {
+  return app.input.mouse.buttons[btn];
+}
+
+b8 input_is_mouse_up(MouseButton btn) {
+  return !app.input.mouse.buttons[btn];
+}
+
+b8 input_is_mouse_pressed(MouseButton btn) {
+  return !app.input.mouse.previous_buttons[btn] && app.input.mouse.buttons[btn];
+}
+
+b8 input_is_mouse_released(MouseButton btn) {
+  return app.input.mouse.previous_buttons[btn] && !app.input.mouse.buttons[btn];
+}
+
+Vec2I32 input_get_mouse_position() {
+  return app.input.mouse.position;
+}
+
+Vec2I32 input_get_mouse_delta_position() {
+  return app.input.mouse.delta_position;
+}
+
+Vec2I32 input_get_mouse_delta_scroll() {
+  return app.input.mouse.delta_scroll;
+}
+
+f64 tick_get_delta_time() {
+  return app.tick.delta_time;
+}
+
+f64 tick_get_time() {
+  return app.tick.time;
+}
+
+f64 tick_get_time_scale() {
+  return app.tick.time_scale;
+}
+
+f64 frame_get_delta_time() {
+  return app.frame.delta_time;
+}
+
+f64 frame_get_time() {
+  return app.frame.time;
+}
+
+f64 frame_get_interpolant() {
+  return app.frame.interpolant;
 }

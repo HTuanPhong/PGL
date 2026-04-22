@@ -1,8 +1,9 @@
 #ifndef PGL_APP_H
 #define PGL_APP_H
 
+#include <pgl/defines.h>
 #include <pgl/math.h>
-#include <stdbool.h> //bool
+#include <pgl/string.h>
 
 typedef enum KeyboardButton {
   KEY_UNKNOWN,
@@ -277,52 +278,76 @@ typedef struct AppData {
     void (*tick)();
     void (*frame)();
   } callback;
+  b8      should_close;
+  StrView base_path;
+
   struct Window {
-    const char *title;
+    StrView title;
     // flag ?
-    bool  ready;
-    bool  shouldClose;
-    Vec2I sizePixel;    // for gpu fbo
-    float pixelDensity; // (sizePixel / sizeLogical) used to convert input space
-    float displayScale; // for ui scale
+    Vec2I32 size;          // pixel    // for gpu fbo
+    f32     pixel_density; // (sizePixel / sizeLogical) used to convert input space and if you want same ui size on many screen do size * this
+    f32     display_scale; // for ui scale
   } window;
-  struct Storage {
-    const char *basePath;
-  } storage;
   struct Input {
-    bool anyButton;
+    b8 any_button;
     struct Keyboard {
-      bool buttons[256];
-      bool buttonsPrev[256];
+      b8 buttons[256];
+      b8 previous_buttons[256];
     } keyboard;
     struct Mouse {
-      bool  buttons[5];
-      bool  buttonsPrev[5];
-      Vec2I positionPixel;
-      Vec2I deltaPositionPixel;
-      Vec2I deltaScrollPixel;
+      b8      buttons[5];
+      b8      previous_buttons[5];
+      Vec2I32 position;       // pixel
+      Vec2I32 delta_position; // pixel
+      Vec2I32 delta_scroll;   // pixel
     } mouse;
   } input;
-  struct Time {
-    double physicsDeltaTime; // for physic
-    double physicsTime;      // for physic
-    double physicsTimeScale; // [0,inf] 0 stop physic, 1 is normal
-    double frameTime;
-    double previousFrameTime; // temp
-    double frameDeltaTime;    // for non deterministic stuff like camera...
-    double frameAccumulator;
-    double renderInterpolation; // [0,1]
-  } time;
+  struct Tick {
+    f64 delta_time; // for physic
+    f64 time;       // for physic
+    f64 time_scale; // [0,inf] 0 stop physic, 1 is normal
+  } tick;
+  struct Frame {
+    f64 delta_time; // for non deterministic stuff like camera...
+    f64 time;
+    f64 previous_time; // internal
+    f64 accumulator;
+    f64 interpolant; // [0,1]
+  } frame;
 } AppData;
 
-extern AppData app;
+void    app_launch(CStr window_title,
+                   i32  width,
+                   i32  height,
+                   void (*init)(),
+                   void (*tick)(),
+                   void (*frame)());
+f64     app_get_time();
+StrView app_get_base_path();
 
-double GetTime();
-void   LaunchApp(const char *windowTitle,
-                 int         width,
-                 int         height,
-                 void        (*init)(),
-                 void        (*tick)(),
-                 void        (*frame)());
+StrView window_get_title();
+Vec2I32 window_get_size();
+f32     window_get_pixel_density();
+f32     window_get_display_scale();
+
+b8      input_is_key_down(KeyboardButton btn);
+b8      input_is_key_up(KeyboardButton btn);
+b8      input_is_key_pressed(KeyboardButton btn);
+b8      input_is_key_released(KeyboardButton btn);
+b8      input_is_mouse_down(MouseButton btn);
+b8      input_is_mouse_up(MouseButton btn);
+b8      input_is_mouse_pressed(MouseButton btn);
+b8      input_is_mouse_released(MouseButton btn);
+Vec2I32 input_get_mouse_position();
+Vec2I32 input_get_mouse_delta_position();
+Vec2I32 input_get_mouse_delta_scroll();
+
+f64 tick_get_delta_time();
+f64 tick_get_time();
+f64 tick_get_time_scale();
+
+f64 frame_get_delta_time();
+f64 frame_get_time();
+f64 frame_get_interpolant();
 
 #endif // PGL_APP_H

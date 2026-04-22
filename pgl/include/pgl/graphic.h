@@ -1,29 +1,23 @@
 #ifndef PGL_GRAPHIC_H
 #define PGL_GRAPHIC_H
 
-#include "pgl/memory.h"
-#include "pgl/string.h"
+#include <pgl/defines.h>
+#include <pgl/memory.h>
+#include <pgl/string.h>
 
-#if defined(__APPLE__)
-#  include <TargetConditionals.h>
-#endif
-
-#if (defined(__EMSCRIPTEN__) || defined(__ANDROID__))
+#if PLATFORM_EMSCRIPTEN || PLATFORM_ANDROID
 #  include <GLES3/gl3.h>
-#elif (defined(__APPLE__) && (TARGET_OS_IOS || TARGET_OS_TV))
+#elif PLATFORM_IOS
 #  include <OpenGLES/ES3/gl.h>
-#else // desktop
-#  define DESKTOP_GL 1
+#elif PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MACOS
 #  include <glad/glad.h>
 #endif
 
-#if !defined(DESKTOP_GL)
-#  define DESKTOP_GL 0
-#endif
+#define GLSL(src) cstr_from_lit(#src)
 
-GLuint CreateShaderProgram(Scratch    *scratch,
-                           const char *vertSrc,
-                           const char *fragSrc,
-                           String     *errLog);
+GLuint shader_program_create(Scratch *scratch,
+                             CStr     vert_src,
+                             CStr     frag_src,
+                             StrBuf  *log_out);
 
 #endif // PGL_GRAPHIC_H

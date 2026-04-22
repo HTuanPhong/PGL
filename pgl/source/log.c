@@ -2,7 +2,7 @@
 #include <pgl/log.h>
 #include <stdarg.h>
 
-void _LogImpl(SDL_LogPriority priority, const char *fmt, ...) {
+void _log_impl(SDL_LogPriority priority, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
 

@@ -4,7 +4,13 @@ project(${TARGET_NAME} C)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "source/*.c")
 
 add_executable(${TARGET_NAME} WIN32 ${SOURCES})
-set_property(TARGET ${TARGET_NAME} PROPERTY C_STANDARD 11)
+target_compile_features(${TARGET_NAME} PRIVATE c_std_11)
+
+set_target_properties(${TARGET_NAME} PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+)
 
 target_link_libraries(${TARGET_NAME} PRIVATE PGL)
 

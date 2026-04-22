@@ -1,32 +1,29 @@
-#include "pgl/log.h"
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include <pgl/pgl.h>
 
-#define GLSL(src) #src
+#include <SDL3/SDL_main.h>
 
-static const char *vs =
+static CStr vs = cstr_from_lit(
   "layout (location = 0) in vec2 aPos;\n"
   "void main()\n"
   "{\n"
   "    gl_Position = vec4(aPos, 0.0, 1.0);\n"
-  "}\n";
+  "}\n");
 
-static const char *fs =
+static CStr fs = cstr_from_lit(
   "out vec4 FragColor;\n"
   "void main()\n"
   "{\n"
   "    FragColor = vec4(1.0, 0.4, 0.2, 1.0);\n"
-  "}\n";
+  "}\n");
 
 static GLuint program, vao, vbo;
 
 static void init() {
-  ScratchMarker marker = ScratchBegin(0);
-  String        errLog = { 0 };
-  program = CreateShaderProgram(marker.scratch, vs, fs, &errLog);
+  ScratchMarker marker = scratch_begin(0);
+  StrBuf        errLog = { 0 };
+  program = shader_program_create(marker.scratch, vs, fs, &errLog);
   if (!program) {
-    LogErr("%s", errLog.value);
+    log_error("%s", errLog.value);
   }
 
   float vertices[] = {
@@ -45,7 +42,7 @@ static void init() {
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  ScratchEnd(marker);
+  scratch_end(marker);
 }
 
 static void frame(void) {
@@ -58,8 +55,8 @@ static void frame(void) {
   glUseProgram(program);
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, 3);
-  LogInfo("%d, %d \n", app.input.mouse.deltaScrollPixel.x, app.input.mouse.deltaScrollPixel.y);
-  SDL_Delay(1000);
+  // Vec2I32 mouse_scroll = input_get_mouse_delta_scroll();
+  // log_info("%d, %d %ld \n", mouse_scroll.x, mouse_scroll.y, __STDC_VERSION__);
 }
 
 static void tick() {
@@ -71,7 +68,7 @@ int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
 
-  LaunchApp("HELLO", 800, 800, init, tick, frame);
+  app_launch(cstr_from_lit("HELLO"), 800, 800, init, tick, frame);
 
   return 0;
 }
