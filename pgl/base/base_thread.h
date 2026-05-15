@@ -1,0 +1,15 @@
+#ifndef BASE_THREAD_H
+#define BASE_THREAD_H
+
+typedef struct ThreadContext {
+  // scratch
+  Scratch scratch[2];
+} ThreadContext;
+
+thread_static ThreadContext thread_local_context = { 0 };
+
+// Thread functions
+
+// function Thread thread_launch(ThreadEntryPointFunctionType *f, void *p);
+
+#endif

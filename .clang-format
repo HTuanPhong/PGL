@@ -58,7 +58,8 @@ IndentGotoLabels: true
 IndentPPDirectives: AfterHash
 IndentWidth: 2
 ContinuationIndentWidth: 2
-IndentWrappedFunctionNames: true
+BracedInitializerIndentWidth: 2
+IndentWrappedFunctionNames: false
 
 InsertBraces: true
 InsertNewlineAtEOF: true

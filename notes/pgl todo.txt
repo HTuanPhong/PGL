@@ -1,0 +1,64 @@
+// TODO
+// [x] thread context and scratch mem 
+// [x] OS layer
+// [x] Memory allocator
+// [x] UTF 16 UTF 8
+// [] inputs events and more events
+// [] OS GFX
+// [] api like sdl to start accept text and stop that give os a scratch to write into
+// [] title name buf
+// [] args
+// [] filesystem
+// [] data folder
+// [] setup icon in data folder. might set up some rules for crossplatform i remember how flutter have plugin related
+// [] Math
+// [] let base layer handle all things about args so entry_point dont have to care
+// [] do argument getting like sokol instead of __argc __wargv ?
+
+ABOUT GRAPHIC API:
+  it should converge not on the graphic operation but on feature space because its impossible to achive
+  the best speed without reimplementing it on all the API. And we want speed if you just want to run on
+  all platform and code the same go use javascript. Thats not a joke javascript is good enough and support
+  many platform if you dont want speed.
+
+ECSC:
+  Put it in ECS if you iterate over it in bulk
+  Put it in a C if it owns complex behavior
+
+FLOAT:
+  do not compare float to 0 please!!! floating error !! if num != 0 do this if num > 1e-10 or num < -1e^-10
+
+Arena:
+  arena allocator for frame.
+  passing arena down the call chain by copy and by ptr is a cool way to have RAII (basically just not have to call free)
+
+ZII:
+  try to have ZII (basically to avoid calling init)
+
+UI:
+  immediate mode is faster when we need to change the structure frequently like 3D world and game GUI.
+  retained mode is faster when we dont change the structure frequently and instead change it in bulk
+  like gpu pipeline, command buffer, os gui where we cant afford the cost to rebuild while for the above we have to rebuild anyway. 
+
+  gui have little thing to draw so these shader branching and single draw call make sense 
+  but for a 3d world with many object this will slow down and you should do thing seperately instead
+
+  the ui structure state need to be able to save.
+  the ui need to be able to undo. In a form of delta encoding.
+  the ui need to be able to form tight(tiling) and loose windows.
+  the ui need to have a command bar.
+  the ui need to be run with gpu and maybe without.
+  the ui must not have small unnoticeable buttons
+  the ui must have some rounding bloom blur glow border.
+  the ui can have a drag and drop from other windows or software.
+  the ui can be customizeable.
+  the ui shouldnt care for phone layout user decide.
+  the ui must not change too much.
+
+TICK vs FRAME:
+  "If this code runs a different number of times between two frames, could it change the outcome of the game?"
+  If the answer is Yes (e.g., applying velocity, checking for a hit), it must go in the Tick. because deterministic is important.
+  If the answer is No (e.g., updating the position of a sliding menu), it should go in the Draw step. because it will be smoother.
+
+MESH:
+- procedural mesh generation for mesh cutting

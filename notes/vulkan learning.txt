@@ -1,0 +1,94 @@
+step 1: extension, hardware
+
+- create `vkInstance` to let vk know the EXTENSION we will be using
+- query for hardware `vkPhysicalDevice`
+
+step 2: feature, queue
+
+- create logical device `vkDevice` to let vk know the PHYSICAL DEVICE FEATURES we will be using
+- most vk operation like draw commands and memory operations are async executed by submitting to a 
+  `vkQueue` there are many queue types depend on the operations.
+
+step 3: window, surface, swapchain, window handle (not needed if offscreen rendering)
+
+- create a window with OS API.
+- we need a window surface `vkSurfaceKHR` and a swapchain `vkSwapchainKHR` the KHR postfix means 
+  these are from a vulkan extension. Because vk is platform ignostic so we have to use WSI extension
+  to interact with window manager.
+- a surface is an abstraction for us to render to created by providing a window handle like HWND on 
+  win32 
+- a swapchain is a collection of render targets purpose is to not render on the same buffer on the
+  screen to avoid tearing. Two buffer is vsync and three buffer also exist.
+- (some platform allow to render directly to display without window manager through VK_KHR_display 
+  and VK_KHR_display_swapchain extensions. These buffer are the entire screen)
+
+step 4: imageview, framebuffer (UNCLEAR)
+
+- swapchain have many images. To draw to them we have to wrap each one into a `vkImageView` and
+  `vkFramebuffer`.
+- image view is the reference to a part of the image basically a rect size prob
+- framebuffer reference image views that are to be used for color, depth, stencil targets.
+
+step 5: dynamic rendering
+
+- (this step used to use renderpass that declare everything infront but no more)
+- dynamic rendering from vk 1.3 no longer need to create framebuffer at all. This remove the need
+  for predefined renderpass and framebuffers no more overhead of managing framebuffers
+- Instead you specify rendering attachments at start of command recording using `vkBeginRendering`
+  and structs like `vkRenderingInfo` to provide all necessary attachment information dynamically.
+
+step 6: graphic pipeline
+
+- create `VkPipeline` to describe viewport size, depth buffer operation, programmable state using
+  `vkShaderModule`.
+- `vkShaderModule` are created from shader byte code.
+- vk force you to set all config of graphic pipeline in advance. if you want a different shader.
+  Then make new pipeline. This is for driver optimization.
+
+step 7: command pools and command buffers
+
+- the operations that we want to do first need to be recorded into a `vkCommandBuffer` which is
+  allocated from a `vkCommandPool` that associated with a specific queue type.
+- (in the old renderpass style before dynamic rendering we need to record a command buffer with:
+   + begin render pass
+   + beind the graphic pipeline
+   + draw three vertices
+   + end the render pass
+   )
+- dynamic rendering changes things. Instead of "beginning" and "ending" a render pass, you directly 
+  define the rendering attachments when you start rendering with vk::BeginRendering. This is so you
+  can specify attachments on the fly for example changing swapchain image dynamicly.
+
+step 8: main loop
+
+- now drawing commands are wrapped into command buffer. Acquire image from swapchain with
+  `device.acquireNextImageKHR` select command buffer for that image and execute with
+  `graphicsQueue.submit()` return image to swapchain with `presentQueue.presentKHR(presentInfo)`
+- Operations that are submitted to queues are executed asynchronously. Therefore, we have to use 
+  synchronization objects like semaphores to ensure a correct order of execution.
+- Execution of the draw command buffer must be set up to wait on image acquisition to finish; 
+  otherwise, it may occur that we start rendering to an image that is still being read for 
+  presentation on the screen. 
+- The `presentQueue.presentKHR(presentInfoKHR)` call in turn needs to wait for rendering to be 
+  finished, for which we’ll use a second semaphore that is signaled after rendering completes.
+
+
+So in short, to draw the first triangle, we need to:
+
+Create an Instance
+
+Select a supported graphics card (PhysicalDevice)
+
+Create a Device and Queue for drawing and presentation
+
+Create a window, window surface and swap chain
+
+Wrap the swap chain images into VkImageView
+
+Set up dynamic rendering
+
+Set up the graphics pipeline
+
+Allocate and record a command buffer with the draw commands for every possible swap chain image
+
+Draw frames by acquiring images, submitting the right draw command buffer and returning the images to the swap chain
