@@ -116,7 +116,7 @@
 #  define assert(x) (void)(x)
 #endif
 
-#define static_assert(C, ID) global u8 glue(ID, __LINE__)[(C)?1:-1]
+#define static_assert(C, ID) GLOBAL u8 glue(ID, __LINE__)[(C)?1:-1]
 
 // rename
 
@@ -166,16 +166,17 @@
 
 // Codebase Keywords
 
-#define function      static
-#define global        static
-#define local_persist static
+#define FUNCTION          static
+#define GLOBAL            static
+#define LOCAL_PERSISTENT  static
+#define EXTERNAL          extern
 
 #if COMPILER_MSVC
-#  define thread_static __declspec(thread)
+#  define THREAD_PERSISTENT __declspec(thread)
 #elif COMPILER_CLANG || COMPILER_GCC
-#  define thread_static __thread
+#  define THREAD_PERSISTENT __thread
 #else
-#  error thread_static not defined for this compiler.
+#  error THREAD_PERSISTENT not defined for this compiler.
 #endif
 
 #define true          1

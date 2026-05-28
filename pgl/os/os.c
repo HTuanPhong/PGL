@@ -1,9 +1,9 @@
-function void
+FUNCTION void
 os_init_systems(void) {
   init();
 }
 
-function void
+FUNCTION void
 os_loop_systems(void) {
   os_app_data.frame.time = os_now_seconds();
   os_app_data.frame.delta_time = os_app_data.frame.time - os_app_data.frame.previous_time;
@@ -22,7 +22,7 @@ os_loop_systems(void) {
   frame();
 }
 
-function void
+FUNCTION void
 os_cleanup_systems(void) {
   cleanup();
 }

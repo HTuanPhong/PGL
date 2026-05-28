@@ -126,13 +126,13 @@ typedef enum OS_Button {
     OS_BUTTON_COUNT
 } OS_Button;
 
-global Str8 os_button_display_string_table[] = {
+GLOBAL Str8 os_button_display_string_table[] = {
 #define X(enum, display, config) str8_from_lit(display),
   OS_BUTTON_TABLE
 #undef X
 };
 
-global Str8 os_button_config_string_table[] = {
+GLOBAL Str8 os_button_config_string_table[] = {
 #define X(enum, display, config) str8_from_lit(config),
   OS_BUTTON_TABLE
 #undef X
@@ -220,7 +220,7 @@ typedef struct OS_AppData {
   } frame;
 } OS_AppData;
 
-global OS_AppData os_app_data = {
+GLOBAL OS_AppData os_app_data = {
   .tick = {
     .delta_time = 1.0 / 240.0,
     .time_scale = 1,
@@ -238,55 +238,55 @@ typedef struct OS_AppInitSetting {
   // something about icon and cursor image here
 } OS_AppInitSetting;
 
-extern OS_AppInitSetting os_app_init_setting;
+EXTERNAL OS_AppInitSetting os_app_init_setting;
 
 // workflows
 
-extern void init(void);
-extern void tick(void);
-extern void frame(void);
-extern void cleanup(void);
+EXTERNAL void init(void);
+EXTERNAL void tick(void);
+EXTERNAL void frame(void);
+EXTERNAL void cleanup(void);
 
 // os entrys
 
-function void os_init_systems(void);
-function void os_loop_systems(void);
-function void os_cleanup_systems(void);
+FUNCTION void os_init_systems(void);
+FUNCTION void os_loop_systems(void);
+FUNCTION void os_cleanup_systems(void);
 
 // clipboard
 
-function void os_set_clipboard_text(Str8 string);      // (Implemented Per-OS)
-function Str8 os_get_clipboard_text(Scratch *scratch); // (Implemented Per-OS)
+FUNCTION void os_set_clipboard_text(Str8 string);      // (Implemented Per-OS)
+FUNCTION Str8 os_get_clipboard_text(Scratch *scratch); // (Implemented Per-OS)
 
 // cursor
 
-function void os_set_cursor(OS_Cursor cursor); // (Implemented Per-OS)
+FUNCTION void os_set_cursor(OS_Cursor cursor); // (Implemented Per-OS)
 
 // native graphical ui
 
-function void os_graphical_message(b8 error, Str8 title, Str8 message);    // (Implemented Per-OS)
-function Str8 os_graphical_pick_file(Scratch *scratch, Str8 initial_path); // (Implemented Per-OS)
+FUNCTION void os_graphical_message(b8 error, Str8 title, Str8 message);    // (Implemented Per-OS)
+FUNCTION Str8 os_graphical_pick_file(Scratch *scratch, Str8 initial_path); // (Implemented Per-OS)
 
 // web
 
-function void os_open_in_browser(Str8 url); // (Implemented Per-OS)
+FUNCTION void os_open_in_browser(Str8 url); // (Implemented Per-OS)
 
 // Memory
 
-function void *os_memory_reserve(u64 size);            // (Implemented Per-OS)
-function void  os_memory_release(void *ptr, u64 size); // (Implemented Per-OS)
+FUNCTION void *os_memory_reserve(u64 size);            // (Implemented Per-OS)
+FUNCTION void  os_memory_release(void *ptr, u64 size); // (Implemented Per-OS)
 
 // File System
 
 // Abort
 
-function void os_abort(i32 exit_code); // (Implemented Per-OS)
+FUNCTION void os_abort(i32 exit_code); // (Implemented Per-OS)
 
 // Time
 
-function f64  os_now_seconds(void);      // (Implemented Per-OS)
-function void os_sleep_seconds(f64 sec); // (Implemented Per-OS)
-function u64  os_now_unix_seconds(void); // (Implemented Per-OS)
+FUNCTION f64  os_now_seconds(void);      // (Implemented Per-OS)
+FUNCTION void os_sleep_seconds(f64 sec); // (Implemented Per-OS)
+FUNCTION u64  os_now_unix_seconds(void); // (Implemented Per-OS)
 
 // Thread & Sync Primitive
 

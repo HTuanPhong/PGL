@@ -6,7 +6,7 @@ typedef struct ThreadContext {
   Scratch scratch[2];
 } ThreadContext;
 
-thread_static ThreadContext thread_local_context = { 0 };
+THREAD_PERSISTENT ThreadContext thread_local_context = { 0 };
 
 // Thread functions
 

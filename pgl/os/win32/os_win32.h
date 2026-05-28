@@ -2,14 +2,12 @@
 #define OS_WIN32_H
 
 #define NOMINMAX
-#undef function // window have a function word somewhere in there >: (
-#include <dwmapi.h>
+// #include <dwmapi.h>
 #include <shellscalingapi.h>
 #include <windows.h>
 #include <windowsx.h>
 #pragma comment(linker, "/subsystem:windows")
-#pragma comment(lib, "dwmapi")
-#define function static
+// #pragma comment(lib, "dwmapi")
 
 typedef struct OS_W32_State {
   UINT          original_codepage;
@@ -24,7 +22,7 @@ typedef struct OS_W32_State {
   // content_scale = window_scale
 } OS_W32_State;
 
-global OS_W32_State os_w32_state = { 0 };
+GLOBAL OS_W32_State os_w32_state = { 0 };
 
 /*  OS_CURSOR_        Win32         */
 #define OS_WIN32_CURSOR_MAP_TABLE    \
@@ -160,7 +158,7 @@ global OS_W32_State os_w32_state = { 0 };
   X(X1_MOUSE         ,VK_XBUTTON1   )\
   X(X2_MOUSE         ,VK_XBUTTON2   )
 
-global OS_Button os_w32_button_table[256] = {
+GLOBAL OS_Button os_w32_button_table[256] = {
 #define X(os_button, vk) [vk] = OS_BUTTON_##os_button,
   OS_WIN32_BUTTON_MAP_TABLE
 #undef X

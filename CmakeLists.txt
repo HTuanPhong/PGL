@@ -11,13 +11,16 @@ file(GLOB APP_DIRS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/apps/*)
 foreach(app ${APP_DIRS})
     get_filename_component(name ${app} NAME)
     add_executable(${name} WIN32 "${app}/${name}_main.c")
-    target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/pgl)
-    
-    if(WIN32)
-        target_link_libraries(${name} PRIVATE
-            dwmapi
-        )
-    endif()
+    target_include_directories(${name} PRIVATE 
+        ${CMAKE_SOURCE_DIR}/pgl
+        ${CMAKE_SOURCE_DIR}/third_party
+    )
+
+    # if(WIN32)
+    #     target_link_libraries(${name} PRIVATE
+    #         dwmapi
+    #     )
+    # endif()
 
     add_custom_target(
         "run_${name}"

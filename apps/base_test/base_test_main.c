@@ -1,9 +1,11 @@
 #define BUILD_DEBUG 1
 #include "base/base_include.h"
 #include "os/os_include.h"
+#include "gpu/gpu_include.h"
 
 #include "base/base_include.c"
 #include "os/os_include.c"
+#include "gpu/gpu_include.c"
 
 #include <stdio.h>
 #define eval_print(x) fprintf(stdout, "%s = %.2f\n", #x, (float)(x))
@@ -12,7 +14,7 @@
 
 i32 state = 1;
 
-global OS_AppInitSetting os_app_init_setting = {
+GLOBAL OS_AppInitSetting os_app_init_setting = {
   .size = { 300, 300 },
   .position = { 500, 100 },
   .msaa = 0,
@@ -48,7 +50,6 @@ void tick(void) {
 }
 
 void frame(void) {
-  if (os_app_data.input.buttons.current[OS_BUTTON_1] && )
   printf(
     "\033[u\033[J"
     "--- DEBUG LOGS ---\n"

@@ -16,7 +16,7 @@
 // Hacker's delight Section 2-1
 #define is_pow2(x) ((x) != 0 && is_pow2_or_zero(x))
 
-function void *
+FUNCTION void *
 _scratch_push(Scratch *scratch, u64 size, u64 alignment) {
   assert(scratch);
   assert(size > 0);
@@ -74,14 +74,14 @@ _scratch_push(Scratch *scratch, u64 size, u64 alignment) {
   return result;
 }
 
-function void *
+FUNCTION void *
 _scratch_push_zero(Scratch *scratch, u64 size, u64 alignment) {
   void *result = _scratch_push(scratch, size, alignment);
   mem_set(result, 0, size);
   return result;
 }
 
-function ScratchMarker
+FUNCTION ScratchMarker
 scratch_get_mark(Scratch *scratch) {
   ScratchMarker result;
   result.scratch = scratch;
@@ -90,7 +90,7 @@ scratch_get_mark(Scratch *scratch) {
   return result;
 }
 
-function void
+FUNCTION void
 scratch_pop_to(ScratchMarker *marker) {
   if (!marker->current) {
     marker->current = marker->scratch->first; // incase we not init yet
@@ -99,25 +99,25 @@ scratch_pop_to(ScratchMarker *marker) {
   marker->scratch->current_block_usage = marker->current_block_usage;
 }
 
-function void
+FUNCTION void
 scratch_clear(Scratch *scratch) {
   ScratchMarker m = { scratch, scratch->first, 0 };
   scratch_pop_to(&m);
 }
 
-function ScratchMarker
+FUNCTION ScratchMarker
 scratch_begin(Scratch *other_scratch) {
   Scratch *G_scratch = thread_local_context.scratch;
   Scratch *chosen = (G_scratch == other_scratch) ? (G_scratch + 1) : G_scratch;
   return scratch_get_mark(chosen);
 }
 
-function void
+FUNCTION void
 scratch_end(ScratchMarker marker) {
   scratch_pop_to(&marker);
 }
 
-function void
+FUNCTION void
 scratch_trim(Scratch *scratch) {
   if (!scratch->peak) {
     return;
@@ -130,7 +130,7 @@ scratch_trim(Scratch *scratch) {
   scratch->peak = scratch->current;
 }
 
-function void
+FUNCTION void
 scratch_free(Scratch *scratch) {
   for (ScratchBlock *p = scratch->first; p != NULL;) {
     ScratchBlock *toFree = p;
@@ -143,7 +143,7 @@ scratch_free(Scratch *scratch) {
   scratch->current_block_usage = 0;
 }
 
-function void
+FUNCTION void
 scratch_pop(Scratch *scratch, u64 amount) {
   if (scratch->current_block_usage >= amount) {
     scratch->current_block_usage -= amount;

@@ -1,13 +1,13 @@
 Platforms to support
   [x] WINDOW
-  [x] LINUX
-  [ ] MACOS
-  [x] WEB
+  [-] LINUX
+  [ ] MACOS (no hardware poor ;-;)
+  [-] WEB
 
 Graphic drivers to support
-  [x] OPENGL
-  [x] OPENGLES
-  [ ] Vulkan,moltenvk
+  [ ] Vulkan
+  [ ] Metal
+  [ ] WebGPU
 
 Threads
   [ ] SDL thread for multi core by default MTCD but tls is our own keyword
@@ -22,19 +22,19 @@ UI
   [ ] blur
   [ ] windowing
 
+Memory
+  [x] Scratch per thread arena for all kind of scratch memory
+  [ ] Persistent arena for persistent heterogeneous data
+  [ ] Persistent pool for persistent homogeneous data
 
-Dependency
-  - SDL
-    + For application entry point
-    + Display and Window Management
-    + Clipboard Handling
-    + Input keyboard, mouse, camera, gamepad, joystick, touch, pen, sensors
-    + time
-    + File Dialogs
+File system
+  [ ] virtual file system ?
 
 Ideas for PGL
   - RAYLIB
   - Raddebugger
+  - sokol
+  - cute framework
 
 Tools
   Debugger:         LLDB

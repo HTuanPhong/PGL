@@ -50,6 +50,7 @@ Cpp11BracedListStyle: false
 
 # Never format includes
 IncludeBlocks: Preserve
+SortIncludes: false
 
 IndentCaseBlocks: false
 IndentCaseLabels: false
@@ -57,6 +58,7 @@ IndentExternBlock: NoIndent
 IndentGotoLabels: true
 IndentPPDirectives: AfterHash
 IndentWidth: 2
+PPIndentWidth: 2
 ContinuationIndentWidth: 2
 BracedInitializerIndentWidth: 2
 IndentWrappedFunctionNames: false

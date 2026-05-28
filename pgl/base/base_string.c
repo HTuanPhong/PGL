@@ -1,10 +1,10 @@
-function Str8 str8_from_cstring(u8 *cstr) {
+FUNCTION Str8 str8_from_cstring(u8 *cstr) {
   return (Str8){
     cstr, mem_strlen((char *)cstr)
   };
 }
 
-function Str16 str16_from_cstring(u16 *cstr) {
+FUNCTION Str16 str16_from_cstring(u16 *cstr) {
   return (Str16){
     cstr, mem_strlen((char *)cstr) / 2
   };
@@ -16,7 +16,7 @@ function Str16 str16_from_cstring(u16 *cstr) {
 // u64 str8_find(Str8 s, Str8 needle);  // size if not found
 // u64 str8_rfind(Str8 s, Str8 needle); // size if not found
 
-function Str8
+FUNCTION Str8
 str8_slice(Str8 s, u64 begin, u64 end) {
   Str8 result = { s.value + begin, end - begin };
   return result;
@@ -29,7 +29,7 @@ str8_slice(Str8 s, u64 begin, u64 end) {
 
 // u64 str8_hash(Str8 s);
 
-function void
+FUNCTION void
 str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand) {
   u64 required = strbuf->str.size + demand;
   if (required <= strbuf->capacity) {
@@ -51,7 +51,7 @@ str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand) {
   strbuf->str.value[strbuf->str.size] = 0;
 }
 
-function void
+FUNCTION void
 str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s) {
   str8buf_reserve(scratch, strbuf, s.size);
   mem_move(strbuf->str.value + strbuf->str.size, s.value, s.size);
@@ -59,7 +59,7 @@ str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s) {
   strbuf->str.value[strbuf->str.size] = 0;
 }
 
-function void
+FUNCTION void
 str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
@@ -77,7 +77,7 @@ str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args
   va_end(args2);
 }
 
-function void
+FUNCTION void
 str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -85,15 +85,15 @@ str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, const char *fmt, ...) {
   va_end(args);
 }
 
-function void
+FUNCTION void
 str8buf_clear(Str8Buf *buf) {
   buf->str.size = 0;
   buf->str.value[0] = 0;
 }
 
-function UnicodeDecode
+FUNCTION UnicodeDecode
 utf8_decode(u8 *str, u32 cap) {
-  local_persist u8 length[] = {
+  LOCAL_PERSISTENT u8 length[] = {
     1, 1, 1, 1, // 000xx
     1, 1, 1, 1, //
     1, 1, 1, 1, //
@@ -105,9 +105,9 @@ utf8_decode(u8 *str, u32 cap) {
     4,          // 11110
     0           // 11111
   };
-  local_persist u8 first_byte_mask[] = { 0, 0x7F, 0x1F, 0x0F, 0x07 };
-  local_persist u8 final_shift[] = { 0, 18, 12, 6, 0 };
-  UnicodeDecode    result = { 0xFFFFFFFF, 1 };
+  LOCAL_PERSISTENT u8 first_byte_mask[] = { 0, 0x7F, 0x1F, 0x0F, 0x07 };
+  LOCAL_PERSISTENT u8 final_shift[] = { 0, 18, 12, 6, 0 };
+  UnicodeDecode       result = { 0xFFFFFFFF, 1 };
 
   u8 byte = str[0];
   u8 l = length[byte >> 3];
@@ -128,7 +128,7 @@ utf8_decode(u8 *str, u32 cap) {
   return result;
 }
 
-function UnicodeDecode
+FUNCTION UnicodeDecode
 utf16_decode(u16 *str, u32 cap) {
   UnicodeDecode result = { 0xFFFFFFFF, 1 };
 
@@ -148,7 +148,7 @@ utf16_decode(u16 *str, u32 cap) {
   return result;
 }
 
-function u32
+FUNCTION u32
 utf8_encode(u8 *dst, u32 codepoint) {
   u32 size = 0;
   if (codepoint < (1 << 7)) {
@@ -176,7 +176,7 @@ utf8_encode(u8 *dst, u32 codepoint) {
   return size;
 }
 
-function u32
+FUNCTION u32
 utf16_encode(u16 *dst, u32 codepoint) {
   u32 size = 0;
   if (codepoint == 0xFFFFFFFF) {
@@ -194,7 +194,7 @@ utf16_encode(u16 *dst, u32 codepoint) {
   return size;
 }
 
-function Str8
+FUNCTION Str8
 str8_from_str16(Scratch *scratch, Str16 input) {
   Str8 result = { 0 };
   if (input.size) {
@@ -216,7 +216,7 @@ str8_from_str16(Scratch *scratch, Str16 input) {
   return result;
 }
 
-function Str16
+FUNCTION Str16
 str16_from_str8(Scratch *scratch, Str8 input) {
   Str16 result = { 0 };
   if (input.size) {
@@ -238,7 +238,7 @@ str16_from_str8(Scratch *scratch, Str8 input) {
   return result;
 }
 
-function Str8
+FUNCTION Str8
 str8_get_left_of_last_slash(Str8 str) {
   if (str.size > 0) {
     u8 *ptr = str.value + str.size - 1;
@@ -256,7 +256,7 @@ str8_get_left_of_last_slash(Str8 str) {
   return str;
 }
 
-function Str8
+FUNCTION Str8
 str8_get_right_of_last_slash(Str8 str) {
   if (str.size > 0) {
     u8 *ptr = str.value + str.size - 1;

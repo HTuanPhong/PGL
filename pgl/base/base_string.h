@@ -50,56 +50,56 @@ typedef struct UnicodeDecode {
 
 // from cstring
 
-function Str8  str8_from_cstring(u8 *cstr);
-function Str16 str16_from_cstring(u16 *cstr);
+FUNCTION Str8  str8_from_cstring(u8 *cstr);
+FUNCTION Str16 str16_from_cstring(u16 *cstr);
 
 // compare
 
-function i32 str8_cmp_ignore_case(Str8 a, Str8 b);
-function i32 str8_cmp(Str8 a, Str8 b);
+FUNCTION i32 str8_cmp_ignore_case(Str8 a, Str8 b);
+FUNCTION i32 str8_cmp(Str8 a, Str8 b);
 
 // find
 
-function u64 str8_find(Str8 s, Str8 needle);  // size if not found
-function u64 str8_rfind(Str8 s, Str8 needle); // size if not found
+FUNCTION u64 str8_find(Str8 s, Str8 needle);  // size if not found
+FUNCTION u64 str8_rfind(Str8 s, Str8 needle); // size if not found
 
 // slice
 
-function Str8 str8_slice(Str8 s, u64 begin, u64 end);
+FUNCTION Str8 str8_slice(Str8 s, u64 begin, u64 end);
 
 // number conversion
 
-function b8 str8_to_i32(Str8 s, i32 *out);
-function b8 str8_to_i64(Str8 s, i64 *out);
-function b8 str8_to_f32(Str8 s, f32 *out);
-function b8 str8_to_f64(Str8 s, f64 *out);
+FUNCTION b8 str8_to_i32(Str8 s, i32 *out);
+FUNCTION b8 str8_to_i64(Str8 s, i64 *out);
+FUNCTION b8 str8_to_f32(Str8 s, f32 *out);
+FUNCTION b8 str8_to_f64(Str8 s, f64 *out);
 
 // hash
 
-function u64 str8_hash(Str8 s);
+FUNCTION u64 str8_hash(Str8 s);
 
 // string buffer
 
-function void str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand);
-function void str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s);
-function void str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args);
-function void str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, const char *fmt, ...);
-function void str8buf_clear(Str8Buf *buf);
+FUNCTION void str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand);
+FUNCTION void str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s);
+FUNCTION void str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args);
+FUNCTION void str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, const char *fmt, ...);
+FUNCTION void str8buf_clear(Str8Buf *buf);
 
 // UTF conversion
 
-function UnicodeDecode utf8_decode(u8 *str, u32 cap);
-function UnicodeDecode utf16_decode(u16 *str, u32 cap);
-function u32           utf8_encode(u8 *dst, u32 codepoint);
-function u32           utf16_encode(u16 *dst, u32 codepoint);
+FUNCTION UnicodeDecode utf8_decode(u8 *str, u32 cap);
+FUNCTION UnicodeDecode utf16_decode(u16 *str, u32 cap);
+FUNCTION u32           utf8_encode(u8 *dst, u32 codepoint);
+FUNCTION u32           utf16_encode(u16 *dst, u32 codepoint);
 
-function Str8  str8_from_str16(Scratch *scratch, Str16 input);
-function Str16 str16_from_str8(Scratch *scratch, Str8 input);
+FUNCTION Str8  str8_from_str16(Scratch *scratch, Str16 input);
+FUNCTION Str16 str16_from_str8(Scratch *scratch, Str8 input);
 
 // path util
 
-function Str8 str8_get_left_of_last_slash(Str8 str);
-function Str8 str8_get_right_of_last_slash(Str8 str);
+FUNCTION Str8 str8_get_left_of_last_slash(Str8 str);
+FUNCTION Str8 str8_get_right_of_last_slash(Str8 str);
 
 // string interning?
 

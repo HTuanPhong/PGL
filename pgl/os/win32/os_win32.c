@@ -1,12 +1,12 @@
 // Memory
 
-function void *
+FUNCTION void *
 os_memory_reserve(u64 size) {
   void *result = VirtualAlloc(0, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
   return (result);
 }
 
-function void
+FUNCTION void
 os_memory_release(void *ptr, u64 size) {
   VirtualFree(ptr, 0, MEM_RELEASE);
 }
@@ -15,14 +15,14 @@ os_memory_release(void *ptr, u64 size) {
 
 // Abort
 
-function void
+FUNCTION void
 os_abort(i32 exit_code) {
   ExitProcess(exit_code);
 }
 
 // Time
 
-function f64
+FUNCTION f64
 os_now_seconds(void) {
   LARGE_INTEGER qpc;
   QueryPerformanceCounter(&qpc);
@@ -30,20 +30,20 @@ os_now_seconds(void) {
   return (f64)now / 1000000000.0;
 }
 
-function void
+FUNCTION void
 os_sleep_seconds(double sec) {
   DWORD ms = (DWORD)(sec * 1000.0);
   Sleep(ms);
 }
 
-function u64
+FUNCTION u64
 os_w32_unix_time_from_file_time(FILETIME file_time) {
   u64 win32_time = ((u64)file_time.dwHighDateTime << 32) | file_time.dwLowDateTime;
   u64 unix_time64 = ((win32_time - 0x19DB1DED53E8000ULL) / 10000000);
   return unix_time64;
 }
 
-function u64
+FUNCTION u64
 os_now_unix_seconds(void) {
   FILETIME file_time;
   GetSystemTimeAsFileTime(&file_time);
@@ -51,15 +51,26 @@ os_now_unix_seconds(void) {
   return unix_time;
 }
 
+// native graphical ui
+
+FUNCTION void
+os_graphical_message(b8 error, Str8 title, Str8 message) {
+  ScratchMarker m = scratch_begin(0);
+  Str16         title16 = str16_from_str8(m.scratch, title);
+  Str16         message16 = str16_from_str8(m.scratch, message);
+  MessageBoxW(0, (WCHAR *)message16.value, (WCHAR *)title16.value, MB_OK | (!!error * MB_ICONERROR));
+  scratch_end(m);
+}
+
 // Entry and flows
 
-function void
+FUNCTION void
 os_w32_init_time(void) {
   QueryPerformanceFrequency(&os_w32_state.freq);
   QueryPerformanceCounter(&os_w32_state.start);
 }
 
-function void
+FUNCTION void
 os_w32_init_console(void) {
   if (AttachConsole(ATTACH_PARENT_PROCESS)) {
     FILE *res_fp = 0;
@@ -70,12 +81,12 @@ os_w32_init_console(void) {
   SetConsoleOutputCP(CP_UTF8);
 }
 
-function void
+FUNCTION void
 os_w32_restore_console(void) {
   SetConsoleOutputCP(os_w32_state.original_codepage);
 }
 
-function void
+FUNCTION void
 os_w32_init_system_info(void) {
   SYSTEM_INFO sysinfo = { 0 };
   GetSystemInfo(&sysinfo);
@@ -84,7 +95,7 @@ os_w32_init_system_info(void) {
   assert(is_pow2(os_app_data.system_info.page_size));
 }
 
-function void
+FUNCTION void
 os_w32_init_process_info(Scratch *scratch) {
   ScratchMarker m = scratch_begin(0);
   // get binary path
@@ -107,7 +118,7 @@ os_w32_init_process_info(Scratch *scratch) {
   scratch_end(m);
 }
 
-function void
+FUNCTION void
 os_w32_init_args(Scratch *scratch) {
   // int     argc = __argc;
   // WCHAR **wargv = __wargv;
@@ -119,7 +130,7 @@ os_w32_init_args(Scratch *scratch) {
   // }
 }
 
-function void os_w32_init_dpi(void) {
+FUNCTION void os_w32_init_dpi(void) {
   DECLARE_HANDLE(DPI_AWARENESS_CONTEXT_T);
   typedef BOOL(WINAPI * SETPROCESSDPIAWARE_T)(void);
   typedef BOOL(WINAPI * SETPROCESSDPIAWARENESSCONTEXT_T)(DPI_AWARENESS_CONTEXT_T); // since Windows 10, version 1703
@@ -181,7 +192,7 @@ function void os_w32_init_dpi(void) {
   }
 }
 
-function void
+FUNCTION void
 os_w32_init_cursors(void) {
 #define X(mine, win32) os_w32_state.cursors[OS_CURSOR_##mine] = LoadCursor(0, win32);
   OS_WIN32_CURSOR_MAP_TABLE
@@ -189,7 +200,7 @@ os_w32_init_cursors(void) {
   os_app_data.input.cursor.current = OS_CURSOR_POINTER;
 }
 
-function void
+FUNCTION void
 os_w32_capture_input() {
   if (0 == os_w32_state.capture_ref_counter) {
     SetCapture(os_w32_state.hwnd);
@@ -197,7 +208,7 @@ os_w32_capture_input() {
   os_w32_state.capture_ref_counter += 1;
 }
 
-function void
+FUNCTION void
 os_w32_release_input() {
   if (0 != os_w32_state.capture_ref_counter) {
     os_w32_state.capture_ref_counter -= 1;
@@ -207,13 +218,13 @@ os_w32_release_input() {
   }
 }
 
-function void
+FUNCTION void
 os_w32_cursor_pos_update(LPARAM lparam) {
   os_app_data.input.cursor.position.x = GET_X_LPARAM(lparam);
   os_app_data.input.cursor.position.y = GET_Y_LPARAM(lparam);
 }
 
-function LRESULT CALLBACK
+FUNCTION LRESULT CALLBACK
 os_w32_wndproc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
   switch (umsg) {
   case WM_CLOSE: {
@@ -394,11 +405,12 @@ os_w32_wndproc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
   return DefWindowProcW(hwnd, umsg, wparam, lparam);
 }
 
-function void
+FUNCTION void
 os_w32_init_window(Scratch *scratch) {
   ScratchMarker m = scratch_begin(0);
   os_w32_state.hinstance = GetModuleHandleW(0);
 
+  // TODO: WNDCLASSEXW  have hIconSm
   WNDCLASSW wndclassw = { 0 };
   wndclassw.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
   wndclassw.lpfnWndProc = (WNDPROC)os_w32_wndproc;
@@ -416,8 +428,7 @@ os_w32_init_window(Scratch *scratch) {
   */
 
   /*
-   NOTE: The size pass into CreateWindowExW is not only content area but title bar and border
-   aswell so we need AdjustWindowRectEx to get the desired size.
+   NOTE: The size pass into CreateWindowExW is not only content area but title bar and border aswell
   */
 
   DWORD win_ex_style = WS_EX_APPWINDOW
@@ -441,8 +452,6 @@ os_w32_init_window(Scratch *scratch) {
     os_w32_state.hinstance,                                                          // hInstance
     NULL);                                                                           // lParam
 
-  assert(os_w32_state.hwnd);
-
   ShowWindow(os_w32_state.hwnd, SW_SHOW);
   scratch_end(m);
 }
@@ -460,7 +469,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   os_w32_init_cursors();
   // os_w32_init_icons(m.scratch);
   os_w32_init_window(m.scratch);
-  os_w32_init_vulkan();
+  vulkan_init();
 
   // base entry
   os_init_systems();
@@ -492,6 +501,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   }
   os_cleanup_systems();
 
+  // TODO destroy window, icon
   os_w32_restore_console();
   scratch_end(m);
   return 0;
