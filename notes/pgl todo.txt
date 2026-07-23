@@ -3,6 +3,7 @@
 // [x] OS layer
 // [x] Memory allocator
 // [x] UTF 16 UTF 8
+// [] finish os_print and then use that for report.
 // [] inputs events and more events
 // [] OS GFX
 // [] api like sdl to start accept text and stop that give os a scratch to write into
@@ -62,3 +63,6 @@ TICK vs FRAME:
 
 MESH:
 - procedural mesh generation for mesh cutting
+
+RELEASE:
+- compiled with x86-64-v3, x86-64-v4, and Zen4 instruction sets plus LTO. and additional PGO and BOLT optimization

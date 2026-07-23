@@ -240,34 +240,42 @@ typedef struct OS_AppInitSetting {
 
 EXTERNAL OS_AppInitSetting os_app_init_setting;
 
-// workflows
+// print kinds
+
+typedef enum OS_PrintKind {
+  OS_PRINT_INFO,
+  OS_PRINT_WARN,
+  OS_PRINT_ERROR,
+} OS_PrintKind;
+
+// Workflows
 
 EXTERNAL void init(void);
 EXTERNAL void tick(void);
 EXTERNAL void frame(void);
 EXTERNAL void cleanup(void);
 
-// os entrys
+// Entrys
 
 FUNCTION void os_init_systems(void);
 FUNCTION void os_loop_systems(void);
 FUNCTION void os_cleanup_systems(void);
 
-// clipboard
+// Clipboard
 
 FUNCTION void os_set_clipboard_text(Str8 string);      // (Implemented Per-OS)
 FUNCTION Str8 os_get_clipboard_text(Scratch *scratch); // (Implemented Per-OS)
 
-// cursor
+// Cursor
 
 FUNCTION void os_set_cursor(OS_Cursor cursor); // (Implemented Per-OS)
 
-// native graphical ui
+// Native graphical ui
 
 FUNCTION void os_graphical_message(b8 error, Str8 title, Str8 message);    // (Implemented Per-OS)
 FUNCTION Str8 os_graphical_pick_file(Scratch *scratch, Str8 initial_path); // (Implemented Per-OS)
 
-// web
+// Web
 
 FUNCTION void os_open_in_browser(Str8 url); // (Implemented Per-OS)
 
@@ -289,5 +297,11 @@ FUNCTION void os_sleep_seconds(f64 sec); // (Implemented Per-OS)
 FUNCTION u64  os_now_unix_seconds(void); // (Implemented Per-OS)
 
 // Thread & Sync Primitive
+
+// Print
+
+FUNCTION void os_print(OS_PrintKind kind, Str8 msg); // (Implemented Per-OS)
+FUNCTION void os_printv(OS_PrintKind kind, char *fmt, va_list args);
+FUNCTION void os_printf(OS_PrintKind kind, char *fmt, ...);
 
 #endif

@@ -209,7 +209,9 @@ vulkan_device_check_queue_families(VkPhysicalDevice pdev) {
 
   b8 result = false;
 
-  const VkQueueFlags required_flags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
+  const VkQueueFlags required_flags = VK_QUEUE_GRAPHICS_BIT
+                                    | VK_QUEUE_COMPUTE_BIT
+                                    | VK_QUEUE_TRANSFER_BIT;
   for (u32 i = 0; i < queue_family_properties_count; i++) {
     if ((queue_family_properties[i].queueFlags & required_flags) == required_flags) {
       vulkan_state.queue_family_index = i;
@@ -245,7 +247,7 @@ vulkan_create_device() {
   for (u32 i = 0; i < physical_device_count; i++) {
     VkPhysicalDeviceProperties physical_device_properties = { 0 };
     vkGetPhysicalDeviceProperties(physical_devices[i], &physical_device_properties);
-    if (physical_device_properties.apiVersion < VK_API_VERSION_1_4) {
+    if (physical_device_properties.apiVersion < VK_API_VERSION_1_4) { // if people fail this they need to update their driver
       continue;
     }
     if (!vulkan_device_check_extensions(physical_devices[i], extension_names, extension_count)) {
@@ -260,6 +262,10 @@ vulkan_create_device() {
     // TODO check if feature extension if used maybe
     vulkan_state.physical_device = physical_devices[i];
     break;
+  }
+
+  if (!vulkan_state.physical_device) {
+    report(REPORT_FATAL, str8_from_lit("Vulkan Error"), str8_from_lit("Try update your driver"));
   }
 
   const f32               queue_priority = 1.0f;
@@ -303,6 +309,12 @@ vulkan_create_device() {
 
 FUNCTION void
 vulkan_create_swap_chain() {
+  VkSurfaceCapabilitiesKHR surf_caps = {0};
+  VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan_state.physical_device, vulkan_state.surface, &surf_caps));
+  // todo minized window has zero width/height on some platforms 
+  VkSwapchainKHR old_swapchain = vulkan_state.swapchain;
+  _sapp.surface_format = 
+  VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
 }
 
 FUNCTION void

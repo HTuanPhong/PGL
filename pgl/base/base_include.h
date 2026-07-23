@@ -6,5 +6,6 @@
 #include "base_memory.h"
 #include "base_string.h"
 #include "base_thread.h"
+#include "base_report.h"
 
 #endif

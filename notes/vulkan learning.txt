@@ -92,3 +92,74 @@ Set up the graphics pipeline
 Allocate and record a command buffer with the draw commands for every possible swap chain image
 
 Draw frames by acquiring images, submitting the right draw command buffer and returning the images to the swap chain
+
+
+Textures
+├─ Albedo/BaseColor
+│    R8G8B8A8_SRGB
+│
+├─ UI
+│    R8G8B8A8_SRGB
+│
+├─ Normal
+│    R8G8B8A8_UNORM
+│
+├─ Roughness
+│    R8_UNORM
+│
+├─ Metallic
+│    R8_UNORM
+│
+└─ AO
+     R8_UNORM
+
+
+Geometry Pass:
+Albedo SRGB
+      ↓ automatic SRGB→Linear
+
+Normal UNORM
+      ↓
+
+Material Data
+      ↓
+
+Lighting
+      ↓
+
+HDR Scene Buffer
+R16G16B16A16_SFLOAT
+
+
+Post Processing:
+HDR Scene Buffer
+R16G16B16A16_SFLOAT
+      ↓
+
+Bloom
+      ↓
+
+TAA
+      ↓
+
+Color Grading
+      ↓
+
+Exposure
+      ↓
+
+Tone Mapping
+      ↓
+
+LDR Linear Image
+0..1
+
+Presentation:
+LDR Linear Image
+      ↓
+
+Swapchain
+B8G8R8A8_SRGB
+      ↓ automatic Linear→SRGB
+
+Monitor

@@ -51,6 +51,32 @@ os_now_unix_seconds(void) {
   return unix_time;
 }
 
+// Prints
+
+FUNCTION void
+os_print(OS_PrintKind kind, Str8 msg) {
+  ScratchMarker m = scratch_begin(0);
+  Str8Buf       buf = { 0 };
+  switch (kind) {
+  case OS_PRINT_INFO: {
+    str8buf_appendf(m.scratch, &buf, "\x1b[0m" FMT_STR8 "\x1b[0m", str8_varg(msg));
+  } break;
+  case OS_PRINT_WARN: {
+    str8buf_appendf(m.scratch, &buf, "\x1b[33m" FMT_STR8 "\x1b[0m", str8_varg(msg));
+  } break;
+  case OS_PRINT_ERROR: {
+    str8buf_appendf(m.scratch, &buf, "\x1b[31m" FMT_STR8 "\x1b[0m", str8_varg(msg));
+  } break;
+  default:
+    break;
+  }
+  HANDLE h = GetStdHandle(STD_ERROR_HANDLE);
+  DWORD  written;
+  WriteFile(h, buf.str.value, (DWORD)buf.str.size, &written, NULL);
+  OutputDebugStringA((char *)buf.str.value);
+  scratch_end(m);
+}
+
 // native graphical ui
 
 FUNCTION void
@@ -172,18 +198,13 @@ FUNCTION void os_w32_init_dpi(void) {
     fn_setprocessdpiaware();
   }
   // get dpi scale factor for main monitor
-  if (fn_getdpiformonitor) {
-    POINT    pt = { os_app_init_setting.position.x, os_app_init_setting.position.y };
-    HMONITOR hm = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
-    UINT     dpix, dpiy;
-    HRESULT  hr = fn_getdpiformonitor(hm, MDT_EFFECTIVE_DPI, &dpix, &dpiy);
-    assert(SUCCEEDED(hr));
-    // clamp window scale to an integer factor
-    os_app_data.window.dpi_scale = (float)dpix / 96.0f;
-
-  } else {
-    assert_always(!"gay path");
-  }
+  POINT    pt = { os_app_init_setting.position.x, os_app_init_setting.position.y };
+  HMONITOR hm = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+  UINT     dpix, dpiy;
+  HRESULT  hr = fn_getdpiformonitor(hm, MDT_EFFECTIVE_DPI, &dpix, &dpiy);
+  assert(SUCCEEDED(hr));
+  // clamp window scale to an integer factor
+  os_app_data.window.dpi_scale = (float)dpix / 96.0f;
   if (user32) {
     FreeLibrary(user32);
   }

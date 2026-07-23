@@ -1,10 +1,10 @@
-FUNCTION Str8 str8_from_cstring(u8 *cstr) {
+FUNCTION Str8 str8_from_cstr(char *cstr) {
   return (Str8){
-    cstr, mem_strlen((char *)cstr)
+    (u8 *)cstr, mem_strlen(cstr)
   };
 }
 
-FUNCTION Str16 str16_from_cstring(u16 *cstr) {
+FUNCTION Str16 str16_from_cstr(u16 *cstr) {
   return (Str16){
     cstr, mem_strlen((char *)cstr) / 2
   };
@@ -60,7 +60,7 @@ str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s) {
 }
 
 FUNCTION void
-str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args) {
+str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
 
@@ -78,7 +78,7 @@ str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args
 }
 
 FUNCTION void
-str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, const char *fmt, ...) {
+str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   str8buf_appendv(scratch, strbuf, fmt, args);

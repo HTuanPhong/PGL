@@ -50,8 +50,8 @@ typedef struct UnicodeDecode {
 
 // from cstring
 
-FUNCTION Str8  str8_from_cstring(u8 *cstr);
-FUNCTION Str16 str16_from_cstring(u16 *cstr);
+FUNCTION Str8  str8_from_cstr(char *cstr);
+FUNCTION Str16 str16_from_cstr(u16 *cstr);
 
 // compare
 
@@ -82,8 +82,8 @@ FUNCTION u64 str8_hash(Str8 s);
 
 FUNCTION void str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand);
 FUNCTION void str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s);
-FUNCTION void str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, const char *fmt, va_list args);
-FUNCTION void str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, const char *fmt, ...);
+FUNCTION void str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, char *fmt, va_list args);
+FUNCTION void str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, char *fmt, ...);
 FUNCTION void str8buf_clear(Str8Buf *buf);
 
 // UTF conversion

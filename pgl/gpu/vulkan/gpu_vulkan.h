@@ -18,6 +18,7 @@ typedef struct Vulkan_State {
   u32              queue_family_index;
   VkDevice         logical_device;
   VkQueue          queue;
+  VkSwapchainKHR   swapchain;
 } Vulkan_State;
 
 GLOBAL Vulkan_State vulkan_state = { 0 };
@@ -25,18 +26,15 @@ GLOBAL Vulkan_State vulkan_state = { 0 };
 // check
 
 #if PLATFORM_WINDOWS
-#  define VK_CHECK(call)                                                                           \
-    do {                                                                                           \
-        VkResult result = (call);                                                                  \
-        if (result != VK_SUCCESS) {                                                                \
-          ScratchMarker m = scratch_begin(0);                                                      \
-          Str8Buf       buf = { 0 };                                                               \
-          str8buf_appendf(m.scratch, &buf, "Vulkan Error in %s at %s:%d\nResult: %s (%d)\n",       \
-                          #call, __FILE__, __LINE__, vulkan_result_to_string(result), result);     \
-          os_graphical_message(true, str8_from_lit("Vulkan Error"), buf.str);                      \
-          os_abort(-1);                                                                            \
-          scratch_end(m);                                                                          \
-        }                                                                                          \
+#  define VK_CHECK(call)                                          \
+    do {                                                          \
+        VkResult result = (call);                                 \
+        if (result != VK_SUCCESS) {                               \
+          reportf(REPORT_FATAL,                                   \
+               str8_from_lit("Vulkan Error"),                     \
+               "Vulkan Error in %s Result: %s (%d)",              \
+               #call, vulkan_result_to_string(result), result);   \
+        }                                                         \
     } while (0)
 #elif PLATFORM_LINUX
 // TODO
