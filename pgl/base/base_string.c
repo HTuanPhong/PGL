@@ -30,7 +30,7 @@ str8_slice(Str8 s, u64 begin, u64 end) {
 // u64 str8_hash(Str8 s);
 
 FUNCTION void
-str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand) {
+str8buf_reserve(Arena *arena, Str8Buf *strbuf, u64 demand) {
   u64 required = strbuf->str.size + demand;
   if (required <= strbuf->capacity) {
     return;
@@ -42,7 +42,7 @@ str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand) {
   if (new_cap == 0) {
     new_cap = 16;
   }
-  u8 *new_buffer = scratch_push_array(scratch, u8, new_cap + 1);
+  u8 *new_buffer = arena_push_array(arena, u8, new_cap + 1);
   if (strbuf->str.size) {
     mem_move(new_buffer, strbuf->str.value, strbuf->str.size);
   }
@@ -52,21 +52,21 @@ str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand) {
 }
 
 FUNCTION void
-str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s) {
-  str8buf_reserve(scratch, strbuf, s.size);
+str8buf_append(Arena *arena, Str8Buf *strbuf, Str8 s) {
+  str8buf_reserve(arena, strbuf, s.size);
   mem_move(strbuf->str.value + strbuf->str.size, s.value, s.size);
   strbuf->str.size += s.size;
   strbuf->str.value[strbuf->str.size] = 0;
 }
 
 FUNCTION void
-str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, char *fmt, va_list args) {
+str8buf_appendv(Arena *arena, Str8Buf *strbuf, char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
 
   i32 needed = vsnprintf(NULL, 0, fmt, args);
   if (needed > 0) {
-    str8buf_reserve(scratch, strbuf, needed);
+    str8buf_reserve(arena, strbuf, needed);
     vsnprintf((char *)(strbuf->str.value + strbuf->str.size),
               needed + 1,
               fmt,
@@ -78,10 +78,10 @@ str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, char *fmt, va_list args) {
 }
 
 FUNCTION void
-str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, char *fmt, ...) {
+str8buf_appendf(Arena *arena, Str8Buf *strbuf, char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  str8buf_appendv(scratch, strbuf, fmt, args);
+  str8buf_appendv(arena, strbuf, fmt, args);
   va_end(args);
 }
 
@@ -195,11 +195,11 @@ utf16_encode(u16 *dst, u32 codepoint) {
 }
 
 FUNCTION Str8
-str8_from_str16(Scratch *scratch, Str16 input) {
+str8_from_str16(Arena *arena, Str16 input) {
   Str8 result = { 0 };
   if (input.size) {
     u64           cap = input.size * 3;
-    u8           *str = scratch_push_array(scratch, u8, cap + 1);
+    u8           *str = arena_push_array(arena, u8, cap + 1);
     u16          *ptr = input.value;
     u16          *opl = ptr + input.size;
     u64           size = 0;
@@ -209,7 +209,7 @@ str8_from_str16(Scratch *scratch, Str16 input) {
       size += utf8_encode(str + size, consume.codepoint);
     }
     str[size] = 0;
-    scratch_pop(scratch, (cap - size));
+    arena_pop(arena, (cap - size));
     result.value = str;
     result.size = size;
   }
@@ -217,11 +217,11 @@ str8_from_str16(Scratch *scratch, Str16 input) {
 }
 
 FUNCTION Str16
-str16_from_str8(Scratch *scratch, Str8 input) {
+str16_from_str8(Arena *arena, Str8 input) {
   Str16 result = { 0 };
   if (input.size) {
     u64           cap = input.size * 2;
-    u16          *str = scratch_push_array(scratch, u16, cap + 1);
+    u16          *str = arena_push_array(arena, u16, cap + 1);
     u8           *ptr = input.value;
     u8           *opl = ptr + input.size;
     u64           size = 0;
@@ -231,7 +231,7 @@ str16_from_str8(Scratch *scratch, Str8 input) {
       size += utf16_encode(str + size, consume.codepoint);
     }
     str[size] = 0;
-    scratch_pop(scratch, (cap - size) * 2);
+    arena_pop(arena, (cap - size) * 2);
     result.value = str;
     result.size = size;
   }

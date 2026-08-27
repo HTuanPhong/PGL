@@ -99,6 +99,21 @@
 #  error align_as not defined for this compiler.
 #endif
 
+// Codebase Keywords
+
+#define FUNCTION          static
+#define GLOBAL            static
+#define LOCAL_PERSISTENT  static
+#define EXTERNAL          extern
+
+#if COMPILER_MSVC
+#  define THREAD_PERSISTENT __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+#  define THREAD_PERSISTENT __thread
+#else
+#  error THREAD_PERSISTENT not defined for this compiler.
+#endif
+
 // Asserts
 
 #if COMPILER_MSVC
@@ -129,7 +144,9 @@
 
 // Version
 
-#define version(major, minor, patch) (u64)((((u64)(major) & 0xffff) << 32) | ((((u64)(minor) & 0xffff) << 16)) | ((((u64)(patch) & 0xffff) << 0)))
+#define version(major, minor, patch) (u64)((((u64)(major) & 0xffff) << 32) | \
+                                           (((u64)(minor) & 0xffff) << 16) | \
+                                           (((u64)(patch) & 0xffff) << 0))
 #define major_from_version(version) (((version) & 0xffff00000000ull) >> 32)
 #define minor_from_version(version) (((version) & 0x0000ffff0000ull) >> 16)
 #define patch_from_version(version) (((version) & 0x00000000ffffull) >> 0)
@@ -164,20 +181,7 @@
 #define Million(n)    ((n)*1000000)
 #define Billion(n)    ((n)*1000000000)
 
-// Codebase Keywords
-
-#define FUNCTION          static
-#define GLOBAL            static
-#define LOCAL_PERSISTENT  static
-#define EXTERNAL          extern
-
-#if COMPILER_MSVC
-#  define THREAD_PERSISTENT __declspec(thread)
-#elif COMPILER_CLANG || COMPILER_GCC
-#  define THREAD_PERSISTENT __thread
-#else
-#  error THREAD_PERSISTENT not defined for this compiler.
-#endif
+// types
 
 #define true          1
 #define false         0

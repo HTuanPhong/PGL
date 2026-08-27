@@ -263,8 +263,8 @@ FUNCTION void os_cleanup_systems(void);
 
 // Clipboard
 
-FUNCTION void os_set_clipboard_text(Str8 string);      // (Implemented Per-OS)
-FUNCTION Str8 os_get_clipboard_text(Scratch *scratch); // (Implemented Per-OS)
+FUNCTION void os_set_clipboard_text(Str8 string);  // (Implemented Per-OS)
+FUNCTION Str8 os_get_clipboard_text(Arena *arena); // (Implemented Per-OS)
 
 // Cursor
 
@@ -272,8 +272,8 @@ FUNCTION void os_set_cursor(OS_Cursor cursor); // (Implemented Per-OS)
 
 // Native graphical ui
 
-FUNCTION void os_graphical_message(b8 error, Str8 title, Str8 message);    // (Implemented Per-OS)
-FUNCTION Str8 os_graphical_pick_file(Scratch *scratch, Str8 initial_path); // (Implemented Per-OS)
+FUNCTION void os_graphical_message(b8 error, Str8 title, Str8 message); // (Implemented Per-OS)
+FUNCTION Str8 os_graphical_pick_file(Arena *arena, Str8 initial_path);  // (Implemented Per-OS)
 
 // Web
 

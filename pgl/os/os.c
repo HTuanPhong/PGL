@@ -33,13 +33,13 @@ FUNCTION void
 os_printv(OS_PrintKind kind, char *fmt, va_list args) {
   va_list args2;
   va_copy(args2, args);
-  ScratchMarker m = scratch_begin(0);
+  ArenaMarker m = arena_begin(0);
 
   Str8Buf buf = { 0 };
-  str8buf_appendv(m.scratch, &buf, fmt, args);
+  str8buf_appendv(m.arena, &buf, fmt, args);
   os_print(kind, buf.str);
 
-  scratch_end(m);
+  arena_end(m);
   va_end(args2);
 }
 

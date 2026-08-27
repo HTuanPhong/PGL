@@ -22,10 +22,6 @@ ABOUT GRAPHIC API:
   all platform and code the same go use javascript. Thats not a joke javascript is good enough and support
   many platform if you dont want speed.
 
-ECSC:
-  Put it in ECS if you iterate over it in bulk
-  Put it in a C if it owns complex behavior
-
 FLOAT:
   do not compare float to 0 please!!! floating error !! if num != 0 do this if num > 1e-10 or num < -1e^-10
 

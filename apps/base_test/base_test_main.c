@@ -1,11 +1,6 @@
-#define BUILD_DEBUG 1
-#include "base/base_include.h"
-#include "os/os_include.h"
-#include "gpu/gpu_include.h"
-
-#include "base/base_include.c"
-#include "os/os_include.c"
-#include "gpu/gpu_include.c"
+#define BUILD_DEBUG 0
+#include "pgl_include.h"
+#include "pgl_include.c"
 
 #include <stdio.h>
 #define eval_print(x) fprintf(stdout, "%s = %.2f\n", #x, (float)(x))

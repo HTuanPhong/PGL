@@ -1,8 +1,6 @@
 #ifndef BASE_STRING_H
 #define BASE_STRING_H
 
-// this is utf8 only
-
 typedef struct Str8 { // used for operations
   u8 *value;
   u64 size;
@@ -80,10 +78,10 @@ FUNCTION u64 str8_hash(Str8 s);
 
 // string buffer
 
-FUNCTION void str8buf_reserve(Scratch *scratch, Str8Buf *strbuf, u64 demand);
-FUNCTION void str8buf_append(Scratch *scratch, Str8Buf *strbuf, Str8 s);
-FUNCTION void str8buf_appendv(Scratch *scratch, Str8Buf *strbuf, char *fmt, va_list args);
-FUNCTION void str8buf_appendf(Scratch *scratch, Str8Buf *strbuf, char *fmt, ...);
+FUNCTION void str8buf_reserve(Arena *arena, Str8Buf *strbuf, u64 demand);
+FUNCTION void str8buf_append(Arena *arena, Str8Buf *strbuf, Str8 s);
+FUNCTION void str8buf_appendv(Arena *arena, Str8Buf *strbuf, char *fmt, va_list args);
+FUNCTION void str8buf_appendf(Arena *arena, Str8Buf *strbuf, char *fmt, ...);
 FUNCTION void str8buf_clear(Str8Buf *buf);
 
 // UTF conversion
@@ -93,8 +91,8 @@ FUNCTION UnicodeDecode utf16_decode(u16 *str, u32 cap);
 FUNCTION u32           utf8_encode(u8 *dst, u32 codepoint);
 FUNCTION u32           utf16_encode(u16 *dst, u32 codepoint);
 
-FUNCTION Str8  str8_from_str16(Scratch *scratch, Str16 input);
-FUNCTION Str16 str16_from_str8(Scratch *scratch, Str8 input);
+FUNCTION Str8  str8_from_str16(Arena *arena, Str16 input);
+FUNCTION Str16 str16_from_str8(Arena *arena, Str8 input);
 
 // path util
 

@@ -2,8 +2,8 @@
 #define BASE_THREAD_H
 
 typedef struct ThreadContext {
-  // scratch
-  Scratch scratch[2];
+  // arena
+  Arena arena[2];
 } ThreadContext;
 
 THREAD_PERSISTENT ThreadContext thread_local_context = { 0 };

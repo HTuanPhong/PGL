@@ -171,11 +171,11 @@ vulkan_create_surface() {
 
 FUNCTION b8
 vulkan_device_check_extensions(VkPhysicalDevice pdev, const char **required_exts, u32 num_required_exts) {
-  ScratchMarker m = scratch_begin(0);
+  ArenaMarker m = arena_begin(0);
 
   u32 ext_count = 0;
   VK_CHECK(vkEnumerateDeviceExtensionProperties(pdev, 0, &ext_count, 0));
-  VkExtensionProperties *ext_props = scratch_push_array(m.scratch, VkExtensionProperties, ext_count);
+  VkExtensionProperties *ext_props = arena_push_array(m.arena, VkExtensionProperties, ext_count);
   VK_CHECK(vkEnumerateDeviceExtensionProperties(pdev, 0, &ext_count, ext_props));
 
   b8 result = true;
@@ -194,17 +194,17 @@ vulkan_device_check_extensions(VkPhysicalDevice pdev, const char **required_exts
   }
 
 clean_up:
-  scratch_end(m);
+  arena_end(m);
   return result;
 }
 
 FUNCTION b8
 vulkan_device_check_queue_families(VkPhysicalDevice pdev) {
-  ScratchMarker m = scratch_begin(0);
+  ArenaMarker m = arena_begin(0);
 
   u32 queue_family_properties_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(pdev, &queue_family_properties_count, NULL);
-  VkQueueFamilyProperties *queue_family_properties = scratch_push_array(m.scratch, VkQueueFamilyProperties, queue_family_properties_count);
+  VkQueueFamilyProperties *queue_family_properties = arena_push_array(m.arena, VkQueueFamilyProperties, queue_family_properties_count);
   vkGetPhysicalDeviceQueueFamilyProperties(pdev, &queue_family_properties_count, queue_family_properties);
 
   b8 result = false;
@@ -219,7 +219,7 @@ vulkan_device_check_queue_families(VkPhysicalDevice pdev) {
     }
   }
 
-  scratch_end(m);
+  arena_end(m);
   return result;
 }
 
@@ -232,7 +232,7 @@ vulkan_device_check_presentation_supported(VkPhysicalDevice pdev) {
 
 FUNCTION void
 vulkan_create_device() {
-  ScratchMarker m = scratch_begin(0);
+  ArenaMarker m = arena_begin(0);
 
   const char *extension_names[32] = { 0 };
   u32         extension_count = 0;
@@ -241,7 +241,7 @@ vulkan_create_device() {
 
   u32 physical_device_count = 0;
   VK_CHECK(vkEnumeratePhysicalDevices(vulkan_state.instance, &physical_device_count, NULL));
-  VkPhysicalDevice *physical_devices = scratch_push_array(m.scratch, VkPhysicalDevice, physical_device_count);
+  VkPhysicalDevice *physical_devices = arena_push_array(m.arena, VkPhysicalDevice, physical_device_count);
   VK_CHECK(vkEnumeratePhysicalDevices(vulkan_state.instance, &physical_device_count, physical_devices));
 
   for (u32 i = 0; i < physical_device_count; i++) {
@@ -304,17 +304,17 @@ vulkan_create_device() {
   VK_CHECK(vkCreateDevice(vulkan_state.physical_device, &dev_create_info, 0, &vulkan_state.logical_device));
   vkGetDeviceQueue(vulkan_state.logical_device, vulkan_state.queue_family_index, 0, &vulkan_state.queue);
 
-  scratch_end(m);
+  arena_end(m);
 }
 
 FUNCTION void
 vulkan_create_swap_chain() {
-  VkSurfaceCapabilitiesKHR surf_caps = {0};
-  VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan_state.physical_device, vulkan_state.surface, &surf_caps));
-  // todo minized window has zero width/height on some platforms 
-  VkSwapchainKHR old_swapchain = vulkan_state.swapchain;
-  _sapp.surface_format = 
-  VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  // VkSurfaceCapabilitiesKHR surf_caps = {0};
+  // VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan_state.physical_device, vulkan_state.surface, &surf_caps));
+  // // todo minized window has zero width/height on some platforms
+  // VkSwapchainKHR old_swapchain = vulkan_state.swapchain;
+  // _sapp.surface_format =
+  // VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
 }
 
 FUNCTION void

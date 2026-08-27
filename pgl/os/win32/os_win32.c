@@ -55,17 +55,17 @@ os_now_unix_seconds(void) {
 
 FUNCTION void
 os_print(OS_PrintKind kind, Str8 msg) {
-  ScratchMarker m = scratch_begin(0);
-  Str8Buf       buf = { 0 };
+  ArenaMarker m = arena_begin(0);
+  Str8Buf     buf = { 0 };
   switch (kind) {
   case OS_PRINT_INFO: {
-    str8buf_appendf(m.scratch, &buf, "\x1b[0m" FMT_STR8 "\x1b[0m", str8_varg(msg));
+    str8buf_appendf(m.arena, &buf, "\x1b[0m" FMT_STR8 "\x1b[0m", str8_varg(msg));
   } break;
   case OS_PRINT_WARN: {
-    str8buf_appendf(m.scratch, &buf, "\x1b[33m" FMT_STR8 "\x1b[0m", str8_varg(msg));
+    str8buf_appendf(m.arena, &buf, "\x1b[33m" FMT_STR8 "\x1b[0m", str8_varg(msg));
   } break;
   case OS_PRINT_ERROR: {
-    str8buf_appendf(m.scratch, &buf, "\x1b[31m" FMT_STR8 "\x1b[0m", str8_varg(msg));
+    str8buf_appendf(m.arena, &buf, "\x1b[31m" FMT_STR8 "\x1b[0m", str8_varg(msg));
   } break;
   default:
     break;
@@ -74,18 +74,18 @@ os_print(OS_PrintKind kind, Str8 msg) {
   DWORD  written;
   WriteFile(h, buf.str.value, (DWORD)buf.str.size, &written, NULL);
   OutputDebugStringA((char *)buf.str.value);
-  scratch_end(m);
+  arena_end(m);
 }
 
 // native graphical ui
 
 FUNCTION void
 os_graphical_message(b8 error, Str8 title, Str8 message) {
-  ScratchMarker m = scratch_begin(0);
-  Str16         title16 = str16_from_str8(m.scratch, title);
-  Str16         message16 = str16_from_str8(m.scratch, message);
+  ArenaMarker m = arena_begin(0);
+  Str16       title16 = str16_from_str8(m.arena, title);
+  Str16       message16 = str16_from_str8(m.arena, message);
   MessageBoxW(0, (WCHAR *)message16.value, (WCHAR *)title16.value, MB_OK | (!!error * MB_ICONERROR));
-  scratch_end(m);
+  arena_end(m);
 }
 
 // Entry and flows
@@ -122,14 +122,14 @@ os_w32_init_system_info(void) {
 }
 
 FUNCTION void
-os_w32_init_process_info(Scratch *scratch) {
-  ScratchMarker m = scratch_begin(0);
+os_w32_init_process_info(Arena *arena) {
+  ArenaMarker m = arena_begin(0);
   // get binary path
   {
     DWORD size = KB(32);
-    u16  *buffer = scratch_push_array(m.scratch, u16, size);
+    u16  *buffer = arena_push_array(m.arena, u16, size);
     DWORD length = GetModuleFileNameW(0, (WCHAR *)buffer, size);
-    Str8  path = str8_from_str16(scratch, (Str16){ buffer, length });
+    Str8  path = str8_from_str16(arena, (Str16){ buffer, length });
     os_app_data.process_info.binary_path = str8_get_left_of_last_slash(path);
     os_app_data.process_info.binary_name = str8_get_right_of_last_slash(path);
   }
@@ -137,21 +137,21 @@ os_w32_init_process_info(Scratch *scratch) {
   // get initial path
   {
     DWORD length = GetCurrentDirectoryW(0, 0);
-    u16  *buffer = scratch_push_array(m.scratch, u16, length + 1);
+    u16  *buffer = arena_push_array(m.arena, u16, length + 1);
     length = GetCurrentDirectoryW(length + 1, (WCHAR *)buffer);
-    os_app_data.process_info.initial_path = str8_from_str16(scratch, (Str16){ buffer, length });
+    os_app_data.process_info.initial_path = str8_from_str16(arena, (Str16){ buffer, length });
   }
-  scratch_end(m);
+  arena_end(m);
 }
 
 FUNCTION void
-os_w32_init_args(Scratch *scratch) {
+os_w32_init_args(Arena *arena) {
   // int     argc = __argc;
   // WCHAR **wargv = __wargv;
-  // char  **argv = scratch_push_array(scratch, char *, argc);
+  // char  **argv = arena_push_array(arena, char *, argc);
   // for (int i = 0; i < argc; i += 1) {
   //   Str16 arg16 = str16_from_cstring((u16 *)wargv[i]);
-  //   Str8  arg8 = str8_from_str16(scratch, arg16);
+  //   Str8  arg8 = str8_from_str16(arena, arg16);
   //   argv[i] = (char *)arg8.value;
   // }
 }
@@ -427,8 +427,8 @@ os_w32_wndproc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam) {
 }
 
 FUNCTION void
-os_w32_init_window(Scratch *scratch) {
-  ScratchMarker m = scratch_begin(0);
+os_w32_init_window(Arena *arena) {
+  ArenaMarker m = arena_begin(0);
   os_w32_state.hinstance = GetModuleHandleW(0);
 
   // TODO: WNDCLASSEXW  have hIconSm
@@ -457,7 +457,7 @@ os_w32_init_window(Scratch *scratch) {
   DWORD win_style = WS_OVERLAPPEDWINDOW
                   | WS_SIZEBOX;
 
-  Str16 title = str16_from_str8(m.scratch, os_app_init_setting.window_title);
+  Str16 title = str16_from_str8(m.arena, os_app_init_setting.window_title);
 
   os_w32_state.hwnd = CreateWindowExW(
     win_ex_style,                                                                    // dwExStyle
@@ -474,22 +474,22 @@ os_w32_init_window(Scratch *scratch) {
     NULL);                                                                           // lParam
 
   ShowWindow(os_w32_state.hwnd, SW_SHOW);
-  scratch_end(m);
+  arena_end(m);
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
-  ScratchMarker m = scratch_begin(0);
+  ArenaMarker m = arena_begin(0);
   // init
   os_w32_init_time();
   os_w32_init_console();
   os_w32_init_system_info();
-  os_w32_init_process_info(m.scratch);
-  os_w32_init_args(m.scratch);
+  os_w32_init_process_info(m.arena);
+  os_w32_init_args(m.arena);
   // init gfx stuff
   os_w32_init_dpi();
   os_w32_init_cursors();
-  // os_w32_init_icons(m.scratch);
-  os_w32_init_window(m.scratch);
+  // os_w32_init_icons(m.arena);
+  os_w32_init_window(m.arena);
   vulkan_init();
 
   // base entry
@@ -524,6 +524,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   // TODO destroy window, icon
   os_w32_restore_console();
-  scratch_end(m);
+  arena_end(m);
   return 0;
 }

@@ -1,23 +1,42 @@
 #ifndef BASE_MEMORY_H
 #define BASE_MEMORY_H
 
+// calculates the padding needed to align a value x to a boundary b,
+// where b must be a power of two, x is unsigned.
+// Hacker's delight Section 3-1
+#define align_pad_pow2(x, b) (-(x) & ((b) - 1))
+
+// aligns a value x up to the nearest multiple of b,
+// where b must be a power of two, x is unsigned.
+// Hacker's delight Section 3-1
+#define align_pow2(x, b) (((x) + (b) - 1) & (-(b)))
+
+// x is unsigned
+// Hacker's delight Section 2-1
+#define is_pow2_or_zero(x) ((((x) - 1) & (x)) == 0)
+
+// x is unsigned
+// Hacker's delight Section 2-1
+#define is_pow2(x) ((x) != 0 && is_pow2_or_zero(x))
+
 /*
 
 Persistent heterogeneous data | Persistent homogeneous data
-  Arena                       |   Pool arena dense  (generation handle)
-                              |
+  Arena                       |   AoS Pool arena dense  (generation handle) (cold)
+                              |   AoSoA where each chunk is just arena page (generation handle) (hot)
 ------------------------------+-------------------------------
                               |
 Scratch heterogeneous data    | Scratch homogeneous data
-  Thread local frame arena    |   Thread local frame arena
+  Thread local arena          |   Thread local arena
 
 
 
 Implementation everything is built based on arena:
   Arena
-    |------------------|---------------------|
-    v                  v                     v
-  Scratch arena     Pool arena sparse     Pool arena dense
+    |-------------------------|
+    v                         v
+  Thread local arena      Pool arena dense
+ (arena scope ability)   (generation handle ability)
 
 Arena allocate in multiple of page size that mean the code to manage pages are easy.
 
@@ -38,55 +57,80 @@ how do we loop fast through entity with the same:
  - other forms: -> built upon handle
 */
 
-// scratch memory this is a list of blocks
+// arena grow on page have water line to trim
 
-// usage:
-// - call the FUNCTIONs
-// - trim to the max count
-typedef struct ScratchBlock ScratchBlock;
-struct ScratchBlock {
-  ScratchBlock *next;
-  u64           capacity;
-  char          data[];
+typedef struct ArenaMemoryBlock ArenaMemoryBlock;
+struct ArenaMemoryBlock {
+  ArenaMemoryBlock *next;
+  u64               capacity;
+  char              data[];
 };
 
-typedef struct Scratch {
-  ScratchBlock *first;
-  ScratchBlock *current;
-  ScratchBlock *peak; // high water line for trimming
-  u64           current_block_usage;
-} Scratch;
+typedef struct Arena {
+  ArenaMemoryBlock *first; // for freeing arena
+  ArenaMemoryBlock *peak;  // high water line for trimming
+  ArenaMemoryBlock *current;
+  u64               current_block_usage;
+} Arena;
 
-typedef struct ScratchMarker {
-  Scratch      *scratch;
-  ScratchBlock *current;
-  u64           current_block_usage;
-} ScratchMarker;
+typedef struct ArenaMarker {
+  Arena            *arena;
+  ArenaMemoryBlock *current;
+  u64               current_block_usage;
+} ArenaMarker;
 
-// scratch core
-FUNCTION void         *_scratch_push(Scratch *scratch, u64 size, u64 alignment);
-FUNCTION void         *_scratch_push_zero(Scratch *scratch, u64 size, u64 alignment);
-FUNCTION ScratchMarker scratch_get_mark(Scratch *scratch);
-FUNCTION void          scratch_pop_to(ScratchMarker *marker);
+// dense entity structures
+
+typedef struct Handle {
+  u32 sparse_index;
+  u32 generation;
+} Handle;
+
+typedef struct SparseSlot {
+  u32 generation;
+  union {
+    u32 dense_index; // when active
+    u32 next_free;   // when empty
+  };
+} SparseSlot;
+
+typedef struct ArenaAoS {
+  Arena sparse_arena;    // contain SparseSlot map sparse index -> dense index
+  Arena dense_to_sparse; // map dense index -> sparse index
+  Arena dense_arena;     // contain actual data
+  u32   entity_size;
+} ArenaAoS;
+
+typedef struct ArenaAoSoA {
+  Arena dense_arena;
+  Arena sparse_arena;
+  u32   entity_size;
+} ArenaAoSoA;
+
+// arena core
+FUNCTION void       *_arena_push(Arena *arena, u64 size, u64 alignment);
+FUNCTION void       *_arena_push_zero(Arena *arena, u64 size, u64 alignment);
+FUNCTION ArenaMarker arena_get_mark(Arena *arena);
+FUNCTION void        arena_pop_to(ArenaMarker *marker);
 
 // context usage
-FUNCTION ScratchMarker scratch_begin(Scratch *other_scratch);
-FUNCTION void          scratch_end(ScratchMarker marker);
+FUNCTION ArenaMarker arena_begin(Arena *other_arena);
+FUNCTION void        arena_end(ArenaMarker marker);
 
 // helpers
-FUNCTION void scratch_pop(Scratch *scratch, u64 amount);
+FUNCTION void arena_pop(Arena *arena, u64 amount);
 
 // periodically
-FUNCTION void scratch_clear(Scratch *scratch);
-FUNCTION void scratch_trim(Scratch *scratch);
+FUNCTION void arena_clear(Arena *arena);
+FUNCTION void arena_trim(Arena *arena);
 
 // clean up
-FUNCTION void scratch_free(Scratch *scratch);
+FUNCTION void arena_free(Arena *arena);
 
 // push helpers
-#define scratch_push(scratch, type)                   (type *)_scratch_push(scratch, size_of(type), align_of(type))
-#define scratch_push_zero(scratch, type)              (type *)_scratch_push_zero(scratch, size_of(type), align_of(type))
-#define scratch_push_array(scratch, type, count)      (type *)_scratch_push(scratch, (count) * size_of(type), align_of(type))
-#define scratch_push_array_zero(scratch, type, count) (type *)_scratch_push_zero(scratch, (count) * size_of(type), align_of(type))
+#define arena_push(arena, type)                   (type *)_arena_push(arena, size_of(type), align_of(type))
+#define arena_push_zero(arena, type)              (type *)_arena_push_zero(arena, size_of(type), align_of(type))
+#define arena_push_array(arena, type, count)      (type *)_arena_push(arena, (count) * size_of(type), align_of(type))
+#define arena_push_array_zero(arena, type, count) (type *)_arena_push_zero(arena, (count) * size_of(type), align_of(type))
 
 #endif // BASE_MEMORY_H

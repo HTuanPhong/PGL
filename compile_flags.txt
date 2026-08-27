@@ -1,0 +1,5 @@
+-std=c99
+-ferror-limit=10000
+-Ipgl
+-Ithird_party
+-include pgl_include.h

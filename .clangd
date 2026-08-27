@@ -1,0 +1,6 @@
+Diagnostics:
+  Suppress:
+    - "unused-includes"
+    - "undefined-internal"
+    - "redefinition_different_kind"
+    
